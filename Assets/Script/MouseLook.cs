@@ -2,28 +2,37 @@ using UnityEngine;
 
 public class MouseLook : MonoBehaviour
 {
-    public float mouseSensitivity = 100f;
+    public float mouseSensitivity = 2f; 
+    public float smoothing = 15f; 
     public Transform playerBody;
 
-    private float xRotation = 0f;
+    private float targetXRotation = 0f;
+    private float targetYRotation = 0f;
+    private float currentXRotation = 0f;
 
     void Start()
     {
-        // Mengunci kursor di tengah layar
         Cursor.lockState = CursorLockMode.Locked;
+        targetYRotation = playerBody.eulerAngles.y;
     }
 
     void Update()
     {
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+        // 1. Ambil input mouse (Tanpa Time.deltaTime karena Mouse X/Y sudah berupa delta jarak)
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
-        // Rotasi vertikal (Atas / Bawah)
-        xRotation -= mouseY;
-        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
-        transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+        // 2. Hitung target rotasi
+        targetXRotation -= mouseY;
+        targetXRotation = Mathf.Clamp(targetXRotation, -90f, 90f);
+        targetYRotation += mouseX;
 
-        // Rotasi horizontal (Kiri / Kanan) untuk karakter
-        playerBody.Rotate(Vector3.up * mouseX);
+        // 3. Smooth transisi rotasi menggunakan Lerp agar tidak patah-patah
+        currentXRotation = Mathf.Lerp(currentXRotation, targetXRotation, Time.deltaTime * smoothing);
+        Quaternion targetBodyRotation = Quaternion.Euler(0f, targetYRotation, 0f);
+
+        // 4. Aplikasikan rotasi
+        transform.localRotation = Quaternion.Euler(currentXRotation, 0f, 0f); // Kamera Atas/Bawah
+        playerBody.rotation = Quaternion.Slerp(playerBody.rotation, targetBodyRotation, Time.deltaTime * smoothing); // Karakter Kiri/Kanan
     }
 }
