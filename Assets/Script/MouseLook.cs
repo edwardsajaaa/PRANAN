@@ -2,9 +2,15 @@ using UnityEngine;
 
 public class MouseLook : MonoBehaviour
 {
-    public float mouseSensitivity = 2f; 
-    public float smoothing = 15f; 
+    [Header("Sensitivity & Smoothing")]
+    public float mouseSensitivity = 2f;
+    public float smoothing = 15f;
     public Transform playerBody;
+
+    [Header("Clamping Limits")]
+    [Tooltip("Pembatasan sudut vertikal kamera sesuai W1-02 (-80 s.d. +80 derajat)")]
+    public float minPitch = -80f;
+    public float maxPitch = 80f;
 
     private float targetXRotation = 0f;
     private float targetYRotation = 0f;
@@ -13,26 +19,39 @@ public class MouseLook : MonoBehaviour
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
-        targetYRotation = playerBody.eulerAngles.y;
+        Cursor.visible = false;
+        if (playerBody != null)
+        {
+            targetYRotation = playerBody.eulerAngles.y;
+        }
     }
 
     void Update()
     {
-        // 1. Ambil input mouse (Tanpa Time.deltaTime karena Mouse X/Y sudah berupa delta jarak)
+        // Cegah perputaran saat sedang dalam mode Inspection/Journal (W1-11)
+        if (GameStateManager.Instance != null && !GameStateManager.Instance.CanLookAround())
+        {
+            return;
+        }
+
+        // 1. Ambil input mouse
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
-        // 2. Hitung target rotasi
+        // 2. Hitung target rotasi vertikal (Pitch) dibatasi -80 s.d. +80 derajat (W1-02)
         targetXRotation -= mouseY;
-        targetXRotation = Mathf.Clamp(targetXRotation, -90f, 90f);
+        targetXRotation = Mathf.Clamp(targetXRotation, minPitch, maxPitch);
         targetYRotation += mouseX;
 
-        // 3. Smooth transisi rotasi menggunakan Lerp agar tidak patah-patah
+        // 3. Smooth transisi rotasi menggunakan Lerp agar mulus
         currentXRotation = Mathf.Lerp(currentXRotation, targetXRotation, Time.deltaTime * smoothing);
         Quaternion targetBodyRotation = Quaternion.Euler(0f, targetYRotation, 0f);
 
         // 4. Aplikasikan rotasi
-        transform.localRotation = Quaternion.Euler(currentXRotation, 0f, 0f); // Kamera Atas/Bawah
-        playerBody.rotation = Quaternion.Slerp(playerBody.rotation, targetBodyRotation, Time.deltaTime * smoothing); // Karakter Kiri/Kanan
+        transform.localRotation = Quaternion.Euler(currentXRotation, 0f, 0f);
+        if (playerBody != null)
+        {
+            playerBody.rotation = Quaternion.Slerp(playerBody.rotation, targetBodyRotation, Time.deltaTime * smoothing);
+        }
     }
 }
