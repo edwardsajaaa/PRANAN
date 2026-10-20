@@ -39,7 +39,7 @@
 | **Klik Kiri + Geser Mouse** | Memutar Barang Bukti (*Mode Inspeksi*) |
 | **Scroll Mouse** | Zoom In / Zoom Out Bukti (*Mode Inspeksi*) |
 | **F** | Mengambil / Mengamankan Barang Bukti (*Mode Inspeksi*) |
-| **ESC** | Keluar dari Mode Inspeksi / Menu |
+| **Q** | Keluar dari Mode Inspeksi (*Kembali ke Gameplay*) |
 
 ---
 

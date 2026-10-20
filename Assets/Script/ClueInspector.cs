@@ -365,11 +365,12 @@ public class ClueInspector : MonoBehaviour
         ctRect.offsetMin = Vector2.zero;
         ctRect.offsetMax = Vector2.zero;
         var closeTmp = closeTextObj.AddComponent<TMPro.TextMeshProUGUI>();
-        closeTmp.text = "[ESC] Kembali";
+        closeTmp.text = "[Q] Kembali";
         closeTmp.alignment = TMPro.TextAlignmentOptions.Center;
         closeTmp.fontSize = 18;
         closeTmp.color = Color.white;
         ui.closeButton = closeBtn;
+        ui.closeButtonText = closeTmp;
 
         GameObject takeObj = new GameObject("CollectButton");
         takeObj.transform.SetParent(panel.transform, false);
@@ -444,7 +445,7 @@ public class ClueInspector : MonoBehaviour
     private void HandleInput()
     {
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.Escape))
         {
             CloseInspection();
             return;

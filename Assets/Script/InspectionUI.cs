@@ -20,6 +20,7 @@ public class InspectionUI : MonoBehaviour
     [Header("Action Buttons")]
     public Button saveToJournalButton;
     public Button closeButton;
+    public TextMeshProUGUI closeButtonText;
     public Button collectButton;
     public TextMeshProUGUI collectButtonText;
 
@@ -38,6 +39,11 @@ public class InspectionUI : MonoBehaviour
         if (collectButton != null)
         {
             collectButton.onClick.AddListener(OnCollectClicked);
+        }
+
+        if (closeButtonText != null)
+        {
+            closeButtonText.text = "[Q] Kembali";
         }
 
         Hide();
