@@ -23,6 +23,7 @@
 - **Rotasi Giroskopik & Damping**: Rotasi bebas objek 3D menggunakan drag mouse dengan peluruhan inersia (*inertial damping*).
 - **Framing Kamera Adaptif**: Kamera studio secara otomatis mengukur *bounds* objek sehingga objek tampil proporsional (~35% tinggi layar) saat awal dibuka, dilengkapi fitur zoom in/out yang fleksibel.
 - **Deteksi Anomali (Hotspots)**: Titik anomali pada barang bukti dengan sistem *gaze dwell progress* untuk mengungkap petunjuk tersembunyi.
+- **Koleksi Barang Bukti (Collectable vs Inspect-Only)**: Pemain dapat mengambil dan mengamankan bukti fisik portabel ke inventori/kantong bukti (dengan menekan **[F]**) atau sekadar mengamati bukti statis di tempat jika hanya bisa diinspeksi.
 
 ---
 
@@ -37,6 +38,7 @@
 | **E** | Berinteraksi / Memeriksa Bukti (*Inspect*) |
 | **Klik Kiri + Geser Mouse** | Memutar Barang Bukti (*Mode Inspeksi*) |
 | **Scroll Mouse** | Zoom In / Zoom Out Bukti (*Mode Inspeksi*) |
+| **F** | Mengambil / Mengamankan Barang Bukti (*Mode Inspeksi*) |
 | **ESC** | Keluar dari Mode Inspeksi / Menu |
 
 ---

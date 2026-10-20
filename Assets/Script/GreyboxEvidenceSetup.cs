@@ -27,6 +27,7 @@ public class GreyboxEvidenceSetup : MonoBehaviour
             naturalEvidence.clueName = "Pohon Tumbang Lapuk";
             naturalEvidence.clueDescription = "Batang pohon yang roboh di area gambut. Memerlukan analisis forensik fisik.";
             naturalEvidence.category = ClueCategory.Natural;
+            naturalEvidence.isCollectable = false;
         }
 
         if (artificialEvidence != null)
@@ -34,6 +35,7 @@ public class GreyboxEvidenceSetup : MonoBehaviour
             artificialEvidence.clueName = "Tunggul Bekas Penebangan";
             artificialEvidence.clueDescription = "Sisa tunggul pohon di tepi parit drainase gambut. Terlihat tanda aktivitas alat berat.";
             artificialEvidence.category = ClueCategory.Artificial;
+            artificialEvidence.isCollectable = true;
         }
     }
 

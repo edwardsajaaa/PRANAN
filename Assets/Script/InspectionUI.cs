@@ -20,6 +20,8 @@ public class InspectionUI : MonoBehaviour
     [Header("Action Buttons")]
     public Button saveToJournalButton;
     public Button closeButton;
+    public Button collectButton;
+    public TextMeshProUGUI collectButtonText;
 
     private void Awake()
     {
@@ -33,6 +35,11 @@ public class InspectionUI : MonoBehaviour
             saveToJournalButton.onClick.AddListener(OnSaveToJournalClicked);
         }
 
+        if (collectButton != null)
+        {
+            collectButton.onClick.AddListener(OnCollectClicked);
+        }
+
         Hide();
     }
 
@@ -44,9 +51,47 @@ public class InspectionUI : MonoBehaviour
         if (categoryText != null) categoryText.text = $"Kategori: {clue.category}";
         if (descriptionText != null) descriptionText.text = clue.clueDescription;
 
+        if (collectButton != null)
+        {
+            collectButton.gameObject.SetActive(clue.isCollectable);
+            if (closeButton != null)
+            {
+                var closeRect = closeButton.GetComponent<RectTransform>();
+                var collectRect = collectButton.GetComponent<RectTransform>();
+                if (clue.isCollectable)
+                {
+                    if (closeRect != null)
+                    {
+                        closeRect.anchoredPosition = new Vector2(-110, 45);
+                        closeRect.sizeDelta = new Vector2(200, 45);
+                    }
+                    if (collectRect != null)
+                    {
+                        collectRect.anchoredPosition = new Vector2(110, 45);
+                        collectRect.sizeDelta = new Vector2(200, 45);
+                    }
+                }
+                else
+                {
+                    if (closeRect != null)
+                    {
+                        closeRect.anchoredPosition = new Vector2(0, 45);
+                        closeRect.sizeDelta = new Vector2(240, 45);
+                    }
+                }
+            }
+        }
+
         if (statusLogText != null)
         {
-            statusLogText.text = "Periksa detail objek. Arahkan pandangan ke titik anomali fisik...";
+            if (clue.isCollectable)
+            {
+                statusLogText.text = "Periksa detail objek. Tekan [F] Ambil untuk mengamankan bukti, atau arahkan pandangan ke anomali fisik...";
+            }
+            else
+            {
+                statusLogText.text = "Periksa detail objek. Arahkan pandangan ke titik anomali fisik...";
+            }
             statusLogText.color = Color.white;
         }
 
@@ -102,6 +147,14 @@ public class InspectionUI : MonoBehaviour
         if (ClueInspector.Instance != null)
         {
             ClueInspector.Instance.SaveAndClose();
+        }
+    }
+
+    private void OnCollectClicked()
+    {
+        if (ClueInspector.Instance != null)
+        {
+            ClueInspector.Instance.TryCollectActiveClue();
         }
     }
 }

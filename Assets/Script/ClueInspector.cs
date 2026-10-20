@@ -371,6 +371,33 @@ public class ClueInspector : MonoBehaviour
         closeTmp.color = Color.white;
         ui.closeButton = closeBtn;
 
+        GameObject takeObj = new GameObject("CollectButton");
+        takeObj.transform.SetParent(panel.transform, false);
+        var takeRect = takeObj.AddComponent<RectTransform>();
+        takeRect.anchorMin = new Vector2(0.5f, 0f);
+        takeRect.anchorMax = new Vector2(0.5f, 0f);
+        takeRect.anchoredPosition = new Vector2(110, 45);
+        takeRect.sizeDelta = new Vector2(200, 45);
+        var takeImg = takeObj.AddComponent<UnityEngine.UI.Image>();
+        takeImg.color = new Color(0.18f, 0.40f, 0.25f, 0.9f);
+        var takeBtn = takeObj.AddComponent<UnityEngine.UI.Button>();
+        takeBtn.onClick.AddListener(TryCollectActiveClue);
+
+        GameObject takeTextObj = new GameObject("Text");
+        takeTextObj.transform.SetParent(takeObj.transform, false);
+        var ttRect = takeTextObj.AddComponent<RectTransform>();
+        ttRect.anchorMin = Vector2.zero;
+        ttRect.anchorMax = Vector2.one;
+        ttRect.offsetMin = Vector2.zero;
+        ttRect.offsetMax = Vector2.zero;
+        var takeTmp = takeTextObj.AddComponent<TMPro.TextMeshProUGUI>();
+        takeTmp.text = "[F] Ambil";
+        takeTmp.alignment = TMPro.TextAlignmentOptions.Center;
+        takeTmp.fontSize = 18;
+        takeTmp.color = Color.white;
+        ui.collectButton = takeBtn;
+        ui.collectButtonText = takeTmp;
+
         return ui;
     }
 
@@ -420,6 +447,12 @@ public class ClueInspector : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             CloseInspection();
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            TryCollectActiveClue();
             return;
         }
 
@@ -515,6 +548,16 @@ public class ClueInspector : MonoBehaviour
         if (inspectionUI != null)
         {
             inspectionUI.OnHotspotIdentified(hotspot);
+        }
+    }
+
+    public void TryCollectActiveClue()
+    {
+        if (activeClue != null && activeClue.isCollectable)
+        {
+            InteractableObject clueToCollect = activeClue;
+            CloseInspection();
+            clueToCollect.Collect();
         }
     }
 

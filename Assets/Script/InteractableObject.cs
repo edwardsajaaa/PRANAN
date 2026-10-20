@@ -25,6 +25,12 @@ public class InteractableObject : MonoBehaviour
     [Tooltip("Jika diisi > 0, akan mengabaikan hitungan otomatis collider dan memakai angka ini.")]
     public float customInteractionRange = 0f;
 
+    [Header("Collectable Settings")]
+    [Tooltip("Apakah objek ini bisa diambil dan diamankan ke inventori bukti saat diinspeksi")]
+    public bool isCollectable = false;
+    public string collectedMessage = "Bukti berhasil diamankan.";
+    public System.Action<InteractableObject> OnCollected;
+
     [Header("Interaction Settings")]
     [Tooltip("Titik fokus targeting (jika null, menggunakan posisi transform)")]
     public Transform targetPivot;
@@ -79,5 +85,12 @@ public class InteractableObject : MonoBehaviour
         {
             Debug.Log($"[InteractableObject] Berinteraksi dengan {clueName}, studio inspeksi sedang disiapkan.");
         }
+    }
+
+    public virtual void Collect()
+    {
+        OnCollected?.Invoke(this);
+        Debug.Log($"[InteractableObject] {clueName} berhasil diambil: {collectedMessage}");
+        gameObject.SetActive(false);
     }
 }

@@ -135,6 +135,7 @@ GameObject:
   - component: {fileID: 37624854}
   - component: {fileID: 37624853}
   - component: {fileID: 37624852}
+  - component: {fileID: 37624857}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -255,6 +256,25 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &37624857
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 37624851}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f95759f511999c649a291695031858b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  clueName: Kotak Bukti Forensik
+  clueDescription: Ditemukan Di dekat lereng perbukitan
+  category: 0
+  inspectionModelPrefab: {fileID: 0}
+  surfaceProximityTolerance: 2.2
+  customInteractionRange: 0
+  targetPivot: {fileID: 0}
 --- !u!1 &568445571
 GameObject:
   m_ObjectHideFlags: 0
@@ -504,7 +524,7 @@ Transform:
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.45499992, z: 0.2000122}
+  m_LocalPosition: {x: 0, y: 0.45499992, z: 0.375}
   m_LocalScale: {x: 1, y: 0.74338394, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -644,6 +664,51 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1333521323
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1333521325}
+  - component: {fileID: 1333521324}
+  m_Layer: 0
+  m_Name: GameManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1333521324
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1333521323}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0edce6cd57bc1be4691b0fd23a492061, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentState: 0
+--- !u!4 &1333521325
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1333521323}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 924.8274, y: 137.47194, z: 93.02627}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1333904757
 GameObject:
   m_ObjectHideFlags: 0
@@ -658,6 +723,7 @@ GameObject:
   - component: {fileID: 1333904758}
   - component: {fileID: 1333904763}
   - component: {fileID: 1333904762}
+  - component: {fileID: 1333904764}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -806,6 +872,26 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1333904764
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1333904757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5059f08b3512af7469eb999e0341a7d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  coneAngle: 30
+  maxDistance: 2.5
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  angleWeight: 0.6
+  distanceWeight: 0.4
+  interactKey: 101
 --- !u!1 &1561086117
 GameObject:
   m_ObjectHideFlags: 0
@@ -817,7 +903,6 @@ GameObject:
   - component: {fileID: 1561086118}
   - component: {fileID: 1561086121}
   - component: {fileID: 1561086120}
-  - component: {fileID: 1561086119}
   m_Layer: 5
   m_Name: Cursor
   m_TagString: Untagged
@@ -844,26 +929,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0.000021696, y: 0.000021219}
   m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1561086119
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1561086117}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0e60a815301f2f54ab285d9f0f0577d6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  reticleDot: {fileID: 1561086120}
-  promptText: {fileID: 2019083497}
-  canvasGroup: {fileID: 0}
-  idleColor: {r: 1, g: 1, b: 1, a: 0.4}
-  idleScale: {x: 1, y: 1, z: 1}
-  targetedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
-  targetedScale: {x: 1.35, y: 1.35, z: 1}
-  transitionSpeed: 12
 --- !u!114 &1561086120
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -914,6 +979,7 @@ GameObject:
   - component: {fileID: 1994151092}
   - component: {fileID: 1994151091}
   - component: {fileID: 1994151090}
+  - component: {fileID: 1994151093}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -1005,6 +1071,26 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
+--- !u!114 &1994151093
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1994151088}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e60a815301f2f54ab285d9f0f0577d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  reticleDot: {fileID: 1561086120}
+  promptText: {fileID: 2019083497}
+  canvasGroup: {fileID: 0}
+  idleColor: {r: 1, g: 1, b: 1, a: 0.4}
+  idleScale: {x: 1, y: 1, z: 1}
+  targetedColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  targetedScale: {x: 1.35, y: 1.35, z: 1}
+  transitionSpeed: 12
 --- !u!1 &2019083495
 GameObject:
   m_ObjectHideFlags: 0
@@ -1148,3 +1234,4 @@ SceneRoots:
   - {fileID: 1333904761}
   - {fileID: 37624856}
   - {fileID: 568445574}
+  - {fileID: 1333521325}
