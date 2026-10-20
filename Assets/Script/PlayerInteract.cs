@@ -53,94 +53,44 @@ public class PlayerInteract : MonoBehaviour
         Vector3 camPos = mainCamera.transform.position;
         Vector3 camForward = mainCamera.transform.forward;
         float maxVisionDist = 20f;
-        float effectiveConeAngle = Mathf.Max(coneAngle, 60f);
-        float halfAngle = effectiveConeAngle * 0.5f;
-
         InteractableObject bestCandidate = null;
-
         Ray centerRay = new Ray(camPos, camForward);
-        RaycastHit[] centerHits = Physics.SphereCastAll(centerRay, 0.2f, maxVisionDist, occlusionMask, QueryTriggerInteraction.Ignore);
+        RaycastHit[] centerHits = Physics.RaycastAll(centerRay, maxVisionDist, occlusionMask, QueryTriggerInteraction.Ignore);
         System.Array.Sort(centerHits, (a, b) => a.distance.CompareTo(b.distance));
 
         foreach (var hit in centerHits)
         {
-
             if (hit.collider.transform.root == transform.root) continue;
 
             InteractableObject directInteractable = hit.collider.GetComponentInParent<InteractableObject>();
             if (directInteractable != null)
             {
-
                 if (directInteractable.IsInInteractionRange(hit.collider, camPos, transform.position))
                 {
-
-                    Vector3 toHit = hit.point - camPos;
-                    if (toHit.sqrMagnitude > 0.01f && Physics.Raycast(camPos, toHit.normalized, out RaycastHit losHit, toHit.magnitude * 0.95f, occlusionMask, QueryTriggerInteraction.Ignore))
-                    {
-                        if (losHit.collider.transform.root != transform.root && !losHit.collider.transform.IsChildOf(directInteractable.transform))
-                        {
-                            continue;
-                        }
-                    }
-
                     bestCandidate = directInteractable;
-                    break;
-                }
-                else
-                {
-
-                    break;
                 }
             }
-            else
-            {
-
-                break;
-            }
+            break;
         }
 
         if (bestCandidate == null)
         {
-            Collider[] hits = Physics.OverlapSphere(camPos, 8f, occlusionMask, QueryTriggerInteraction.Ignore);
-            float highestScore = -1f;
-            HashSet<InteractableObject> evaluated = new HashSet<InteractableObject>();
+            RaycastHit[] sphereHits = Physics.SphereCastAll(centerRay, 0.05f, maxVisionDist, occlusionMask, QueryTriggerInteraction.Ignore);
+            System.Array.Sort(sphereHits, (a, b) => a.distance.CompareTo(b.distance));
 
-            foreach (var col in hits)
+            foreach (var hit in sphereHits)
             {
-                if (col.transform.root == transform.root) continue;
-                InteractableObject interactable = col.GetComponentInParent<InteractableObject>();
-                if (interactable == null || evaluated.Contains(interactable)) continue;
-                evaluated.Add(interactable);
+                if (hit.collider.transform.root == transform.root) continue;
 
-                if (!interactable.IsInInteractionRange(col, camPos, transform.position)) continue;
-
-                Vector3 closestPoint = col.ClosestPoint(camPos);
-                Vector3 toTarget = closestPoint - camPos;
-                float distance = toTarget.magnitude;
-
-                if (distance < 0.05f) continue;
-
-                float angle = Vector3.Angle(camForward, toTarget);
-                if (angle > halfAngle) continue;
-
-                if (Physics.Raycast(camPos, toTarget.normalized, out RaycastHit losHit, distance * 0.95f, occlusionMask, QueryTriggerInteraction.Ignore))
+                InteractableObject directInteractable = hit.collider.GetComponentInParent<InteractableObject>();
+                if (directInteractable != null)
                 {
-                    if (losHit.collider.transform.root != transform.root && !losHit.collider.transform.IsChildOf(interactable.transform))
+                    if (directInteractable.IsInInteractionRange(hit.collider, camPos, transform.position))
                     {
-                        continue;
+                        bestCandidate = directInteractable;
                     }
                 }
-
-                float normalizedAngleScore = Mathf.Clamp01(1f - (angle / halfAngle));
-                float maxDist = (interactable.customInteractionRange > 0.05f) ? interactable.customInteractionRange : interactable.surfaceProximityTolerance;
-                float normalizedDistanceScore = Mathf.Clamp01(1f - (distance / Mathf.Max(maxDist, 1f)));
-                float totalScore = (angleWeight * normalizedAngleScore) + (distanceWeight * normalizedDistanceScore);
-
-                if (totalScore > highestScore)
-                {
-                    highestScore = totalScore;
-                    bestCandidate = interactable;
-                }
+                break;
             }
         }
 

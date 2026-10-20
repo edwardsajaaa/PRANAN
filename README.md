@@ -11,10 +11,11 @@
 - **Dinamika Kamera & Imersi**: Efek *head bobbing*, *camera sway*, dan pernapasan halus (*breathing effect*) yang menyesuaikan kecepatan gerakan.
 - **Deteksi Permukaan & Langkah Kaki**: Modifikasi kecepatan serta audio berdasarkan jenis permukaan/medan.
 
-### 2. Sistem Deteksi & Interaksi Forensik 360°
+### 2. Sistem Deteksi & Interaksi Forensik Presisi (Center-Dot)
+- **Center-Dot Precision Targeting**: Interaksi wajib diarahkan tepat pada titik tengah crosshair (*reticle dot*), mencegah trigger yang tidak disengaja saat pandangan meleset.
 - **Collider-Based Dynamic Reach**: Jangkauan interaksi dihitung secara otomatis dan adaptif berdasarkan dimensi fisik *collider* objek (objek kecil, sedang, hingga besar).
-- **Surface Proximity Calculation**: Menggunakan kalkulasi *closest point* dari posisi mata dan tubuh pemain terhadap permukaan *collider*, memungkinkan deteksi mulus dari segala sudut tanpa terhalang sudut pandang sempit.
-- **Reticle HUD Interaktif**: Crosshair dinamis yang berubah status saat menyorot barang bukti yang dapat diinvestigasi.
+- **Surface Proximity Calculation**: Menggunakan kalkulasi *closest point* dari posisi mata dan tubuh pemain terhadap permukaan *collider*, memungkinkan deteksi mulus dari sudut manapun (360°) asalkan titik tengah diarahkan ke objek.
+- **Reticle HUD Interaktif**: Crosshair dinamis yang memunculkan prompt `[E] Periksa` tepat di bawah titik tengah saat menyorot barang bukti dalam jangkauan.
 
 ### 3. Studio Inspeksi Barang Bukti (Clue Isolator)
 - **Sub-Viewport Studio**: Lingkungan studio terisolasi dengan pencahayaan *Three-Point Lighting* (Key, Fill, Back Light) yang menyorot detail fisik bukti.
