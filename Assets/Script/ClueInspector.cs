@@ -34,9 +34,9 @@ public class ClueInspector : MonoBehaviour
 
     [Header("Zoom Settings")]
     public float zoomSensitivity = 0.5f;
-    public float minZoomDistance = 0.6f;
-    public float maxZoomDistance = 2.5f;
-    public float defaultZoomDistance = 1.2f;
+    public float minZoomDistance = 0.8f;
+    public float maxZoomDistance = 6.0f;
+    public float defaultZoomDistance = 2.4f;
 
     private InteractableObject activeClue;
     private GameObject spawnedInspectionModel;
@@ -103,9 +103,9 @@ public class ClueInspector : MonoBehaviour
         // 3. Spawn model 3D di studio pivot
         SetupInspectionModel(clue);
 
-        // 4. Reset rotasi dan zoom
+        // 4. Reset rotasi dan zoom awal yang proporsional (tidak terlalu dekat/nge-zoom)
         angularVelocity = Vector2.zero;
-        currentZoom = defaultZoomDistance;
+        currentZoom = CalculateIdealZoom(spawnedInspectionModel);
         UpdateCameraPosition();
 
         // 5. Tampilkan UI
@@ -113,6 +113,60 @@ public class ClueInspector : MonoBehaviour
         {
             inspectionUI.Show(clue);
         }
+    }
+
+    /// <summary>
+    /// Menghitung jarak kamera awal yang ideal berdasarkan ukuran fisik 3D model
+    /// agar pas membingkai objek di tengah layar (memberi margin ~40% ruang kosong di layar).
+    /// </summary>
+    private float CalculateIdealZoom(GameObject targetModel)
+    {
+        if (targetModel == null) return defaultZoomDistance;
+
+        Renderer[] renderers = targetModel.GetComponentsInChildren<Renderer>();
+        Collider[] colliders = targetModel.GetComponentsInChildren<Collider>();
+
+        Bounds combinedBounds = new Bounds(targetModel.transform.position, Vector3.zero);
+        bool hasBounds = false;
+
+        foreach (var r in renderers)
+        {
+            if (r is ParticleSystemRenderer) continue;
+            if (!hasBounds)
+            {
+                combinedBounds = r.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                combinedBounds.Encapsulate(r.bounds);
+            }
+        }
+
+        if (!hasBounds)
+        {
+            foreach (var c in colliders)
+            {
+                if (!hasBounds)
+                {
+                    combinedBounds = c.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    combinedBounds.Encapsulate(c.bounds);
+                }
+            }
+        }
+
+        if (!hasBounds) return defaultZoomDistance;
+
+        float maxDim = Mathf.Max(combinedBounds.size.x, Mathf.Max(combinedBounds.size.y, combinedBounds.size.z));
+        float fov = (inspectionCamera != null) ? inspectionCamera.fieldOfView : 60f;
+        float padding = 1.75f; // Margin framing proporsional (pas seperti screenshot 2)
+
+        float idealDist = (maxDim * 0.5f) / Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad) * padding;
+        return Mathf.Clamp(idealDist, minZoomDistance, maxZoomDistance);
     }
 
     private void EnsureStudioReady()
