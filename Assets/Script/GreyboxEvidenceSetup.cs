@@ -8,7 +8,7 @@ public class GreyboxEvidenceSetup : MonoBehaviour
 
     [Header("Testing Instructions")]
     [TextArea(4, 8)]
-    public string testingGuide = 
+    public string testingGuide =
         "PETUNJUK PENGUJIAN GREYBOX ARENA (W1-12):\n" +
         "1. Uji Tanjakan Lereng (W1-02): Jalankan karakter naik & turun lereng kemiringan 45 derajat.\n" +
         "2. Uji Zona Lumpur (W1-04): Lewati area lumpur, amati penurunan kecepatan sebesar 35%.\n" +
@@ -37,9 +37,6 @@ public class GreyboxEvidenceSetup : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Menghasilkan log investigasi komparasi antara bukti alami vs buatan (Kriteria Selesai W1-12)
-    /// </summary>
     public static void GenerateComparativeReport(InteractableObject natural, InteractableObject artificial)
     {
         Debug.Log("================ HASIL ANALISIS FORENSIK KOMPARASI (STADI 2025) ================");

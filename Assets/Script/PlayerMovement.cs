@@ -31,7 +31,6 @@ public class PlayerMovement : MonoBehaviour
     private float currentDragMultiplier = 1f;
     private bool isRunning = false;
 
-    // Properti publik untuk dibaca CameraEffects / UI
     public bool IsGrounded => characterController != null && characterController.isGrounded;
     public bool IsRunning => isRunning;
     public float CurrentSpeedMagnitude => currentHorizontalVelocity.magnitude;
@@ -46,7 +45,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        // Cegah input bleed saat FSM tidak dalam mode Exploration (W1-11)
+
         if (GameStateManager.Instance != null && !GameStateManager.Instance.CanPlayerMove())
         {
             currentHorizontalVelocity = Vector3.zero;
@@ -66,7 +65,6 @@ public class PlayerMovement : MonoBehaviour
     {
         currentDragMultiplier = 1f;
 
-        // Raycast ke bawah untuk mendeteksi lumpur / gambut (W1-04)
         Ray ray = new Ray(transform.position + Vector3.up * 0.2f, Vector3.down);
         if (Physics.Raycast(ray, out RaycastHit hit, groundCheckDistance, groundLayer, QueryTriggerInteraction.Collide))
         {
@@ -77,7 +75,7 @@ public class PlayerMovement : MonoBehaviour
             }
             else if (hit.collider.CompareTag("Mud"))
             {
-                currentDragMultiplier = 0.65f; // Pengurangan 35% otomatis
+                currentDragMultiplier = 0.65f;
             }
         }
     }
@@ -95,11 +93,10 @@ public class PlayerMovement : MonoBehaviour
 
         Vector3 targetVelocity = inputDir * targetSpeed;
 
-        float rate = (inputDir.magnitude > 0.1f) 
-            ? (accelerationRate * currentDragMultiplier) 
+        float rate = (inputDir.magnitude > 0.1f)
+            ? (accelerationRate * currentDragMultiplier)
             : decelerationRate;
 
-        // Interpolasi inersia akselerasi / deselerasi
         currentHorizontalVelocity = Vector3.MoveTowards(currentHorizontalVelocity, targetVelocity, rate * Time.deltaTime);
     }
 
@@ -107,7 +104,7 @@ public class PlayerMovement : MonoBehaviour
     {
         if (characterController.isGrounded)
         {
-            // Menempel pada turunan bukit (slope stick) agar karakter tidak melayang (W1-02)
+
             verticalVelocity = -slopeStickForce;
         }
         else

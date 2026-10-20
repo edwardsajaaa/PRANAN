@@ -14,8 +14,8 @@ public class PlayerInteract : MonoBehaviour
     public LayerMask occlusionMask = ~0;
 
     [Header("Target Weighting Weights (W1-06)")]
-    [Range(0f, 1f)] public float angleWeight = 0.6f;     // 60% kelurusan pandang
-    [Range(0f, 1f)] public float distanceWeight = 0.4f;  // 40% kedekatan jarak
+    [Range(0f, 1f)] public float angleWeight = 0.6f;
+    [Range(0f, 1f)] public float distanceWeight = 0.4f;
 
     [Header("Input")]
     public KeyCode interactKey = KeyCode.E;
@@ -30,7 +30,7 @@ public class PlayerInteract : MonoBehaviour
 
     void Update()
     {
-        // Hanya aktif di state Exploration
+
         if (GameStateManager.Instance != null && GameStateManager.Instance.CurrentState != GameState.Exploration)
         {
             if (currentBestTarget != null)
@@ -45,10 +45,6 @@ public class PlayerInteract : MonoBehaviour
         HandleInteractionInput();
     }
 
-    /// <summary>
-    /// Cone-Cast spasial 30 derajat dan radius 2.5m dengan verifikasi Line-of-Sight (W1-05)
-    /// serta kalkulasi skor pembobotan target (W1-06).
-    /// </summary>
     private void ScanForTargets()
     {
         if (mainCamera == null) mainCamera = Camera.main;
@@ -56,36 +52,34 @@ public class PlayerInteract : MonoBehaviour
 
         Vector3 camPos = mainCamera.transform.position;
         Vector3 camForward = mainCamera.transform.forward;
-        float maxVisionDist = 20f; // Jarak pandang penglihatan kursor
+        float maxVisionDist = 20f;
         float effectiveConeAngle = Mathf.Max(coneAngle, 60f);
         float halfAngle = effectiveConeAngle * 0.5f;
 
         InteractableObject bestCandidate = null;
 
-        // 1. Prioritas Utama: Kursor langsung menunjuk ke arah collider objek
-        // Menggunakan SphereCast tebal 0.2m dari mata pemain
         Ray centerRay = new Ray(camPos, camForward);
         RaycastHit[] centerHits = Physics.SphereCastAll(centerRay, 0.2f, maxVisionDist, occlusionMask, QueryTriggerInteraction.Ignore);
         System.Array.Sort(centerHits, (a, b) => a.distance.CompareTo(b.distance));
 
         foreach (var hit in centerHits)
         {
-            // Abaikan tubuh player sendiri
+
             if (hit.collider.transform.root == transform.root) continue;
 
             InteractableObject directInteractable = hit.collider.GetComponentInParent<InteractableObject>();
             if (directInteractable != null)
             {
-                // Cek apakah posisi pemain berada dalam jangkauan fisik Collider objek tersebut
+
                 if (directInteractable.IsInInteractionRange(hit.collider, camPos, transform.position))
                 {
-                    // Cek Line-of-Sight ke titik hit agar tidak tembus dinding tebal
+
                     Vector3 toHit = hit.point - camPos;
                     if (toHit.sqrMagnitude > 0.01f && Physics.Raycast(camPos, toHit.normalized, out RaycastHit losHit, toHit.magnitude * 0.95f, occlusionMask, QueryTriggerInteraction.Ignore))
                     {
                         if (losHit.collider.transform.root != transform.root && !losHit.collider.transform.IsChildOf(directInteractable.transform))
                         {
-                            continue; // Terhalang rintangan lain
+                            continue;
                         }
                     }
 
@@ -94,18 +88,17 @@ public class PlayerInteract : MonoBehaviour
                 }
                 else
                 {
-                    // Pemain melihat objek ini tetapi masih terlalu jauh dari fisik collider-nya
+
                     break;
                 }
             }
             else
             {
-                // Terhalang obstacle solid non-interactable (tanah / tebing / dinding)
+
                 break;
             }
         }
 
-        // 2. Jika kursor tidak mengarah persis, cari objek di sekitar pandangan pemain
         if (bestCandidate == null)
         {
             Collider[] hits = Physics.OverlapSphere(camPos, 8f, occlusionMask, QueryTriggerInteraction.Ignore);
@@ -114,12 +107,11 @@ public class PlayerInteract : MonoBehaviour
 
             foreach (var col in hits)
             {
-                if (col.transform.root == transform.root) continue; // Abaikan player
+                if (col.transform.root == transform.root) continue;
                 InteractableObject interactable = col.GetComponentInParent<InteractableObject>();
                 if (interactable == null || evaluated.Contains(interactable)) continue;
                 evaluated.Add(interactable);
 
-                // Cek apakah pemain berada dalam jangkauan fisik collider objek ini
                 if (!interactable.IsInInteractionRange(col, camPos, transform.position)) continue;
 
                 Vector3 closestPoint = col.ClosestPoint(camPos);
@@ -128,20 +120,17 @@ public class PlayerInteract : MonoBehaviour
 
                 if (distance < 0.05f) continue;
 
-                // Cek batas sudut kerucut pandang (Cone check)
                 float angle = Vector3.Angle(camForward, toTarget);
                 if (angle > halfAngle) continue;
 
-                // Verifikasi Line-of-Sight (LOS) ke permukaan terdekat
                 if (Physics.Raycast(camPos, toTarget.normalized, out RaycastHit losHit, distance * 0.95f, occlusionMask, QueryTriggerInteraction.Ignore))
                 {
                     if (losHit.collider.transform.root != transform.root && !losHit.collider.transform.IsChildOf(interactable.transform))
                     {
-                        continue; // Terhalang rintangan
+                        continue;
                     }
                 }
 
-                // Algoritma Pembobotan Target (W1-06)
                 float normalizedAngleScore = Mathf.Clamp01(1f - (angle / halfAngle));
                 float maxDist = (interactable.customInteractionRange > 0.05f) ? interactable.customInteractionRange : interactable.surfaceProximityTolerance;
                 float normalizedDistanceScore = Mathf.Clamp01(1f - (distance / Mathf.Max(maxDist, 1f)));
@@ -155,7 +144,6 @@ public class PlayerInteract : MonoBehaviour
             }
         }
 
-        // Perbarui target aktif dan Reticle UI (W1-07)
         if (bestCandidate != currentBestTarget)
         {
             currentBestTarget = bestCandidate;

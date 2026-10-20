@@ -50,7 +50,6 @@ public class InspectionUI : MonoBehaviour
             statusLogText.color = Color.white;
         }
 
-        // Kriteria W1-10: Tombol Simpan ke Jurnal terkunci abu-abu sampai titik kejanggalan ditemukan
         SetSaveButtonState(false);
         UpdateDwellProgress(0f);
     }

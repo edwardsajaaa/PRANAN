@@ -62,7 +62,7 @@ public class GameStateManager : MonoBehaviour
                 break;
 
             case GameState.Inspection:
-                Time.timeScale = 0f; // Freeze time for clean isolation (W1-08)
+                Time.timeScale = 0f;
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
                 break;

@@ -12,11 +12,11 @@ public class ReticleUI : MonoBehaviour
     public CanvasGroup canvasGroup;
 
     [Header("Exploration State")]
-    public Color idleColor = new Color(1f, 1f, 1f, 0.4f); // 40% transparan (W1-07)
+    public Color idleColor = new Color(1f, 1f, 1f, 0.4f);
     public Vector3 idleScale = Vector3.one;
 
     [Header("Targeted State")]
-    public Color targetedColor = new Color(1f, 0.85f, 0.1f, 1f); // Kuning cerah (W1-07)
+    public Color targetedColor = new Color(1f, 0.85f, 0.1f, 1f);
     public Vector3 targetedScale = new Vector3(1.35f, 1.35f, 1f);
 
     [Header("Animation Settings")]
@@ -42,7 +42,7 @@ public class ReticleUI : MonoBehaviour
 
     private void Update()
     {
-        // Sembunyikan reticle jika bukan di state Exploration
+
         if (GameStateManager.Instance != null && GameStateManager.Instance.CurrentState != GameState.Exploration)
         {
             if (canvasGroup != null) canvasGroup.alpha = 0f;
@@ -53,7 +53,6 @@ public class ReticleUI : MonoBehaviour
             if (canvasGroup != null) canvasGroup.alpha = 1f;
         }
 
-        // Animasi transisi warna & scale reticle secara mulus
         Color targetColor = isTargeting ? targetedColor : idleColor;
         Vector3 targetScale = isTargeting ? targetedScale : idleScale;
 

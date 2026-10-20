@@ -28,26 +28,22 @@ public class MouseLook : MonoBehaviour
 
     void Update()
     {
-        // Cegah perputaran saat sedang dalam mode Inspection/Journal (W1-11)
+
         if (GameStateManager.Instance != null && !GameStateManager.Instance.CanLookAround())
         {
             return;
         }
 
-        // 1. Ambil input mouse
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
-        // 2. Hitung target rotasi vertikal (Pitch) dibatasi -80 s.d. +80 derajat (W1-02)
         targetXRotation -= mouseY;
         targetXRotation = Mathf.Clamp(targetXRotation, minPitch, maxPitch);
         targetYRotation += mouseX;
 
-        // 3. Smooth transisi rotasi menggunakan Lerp agar mulus
         currentXRotation = Mathf.Lerp(currentXRotation, targetXRotation, Time.deltaTime * smoothing);
         Quaternion targetBodyRotation = Quaternion.Euler(0f, targetYRotation, 0f);
 
-        // 4. Aplikasikan rotasi
         transform.localRotation = Quaternion.Euler(currentXRotation, 0f, 0f);
         if (playerBody != null)
         {

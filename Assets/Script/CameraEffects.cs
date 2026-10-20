@@ -57,8 +57,8 @@ public class CameraEffects : MonoBehaviour
     {
         if (targetCamera == null || playerMovement == null) return;
 
-        float targetFOV = playerMovement.IsRunning && playerMovement.CurrentSpeedMagnitude > 0.5f 
-            ? runFOV 
+        float targetFOV = playerMovement.IsRunning && playerMovement.CurrentSpeedMagnitude > 0.5f
+            ? runFOV
             : walkFOV;
 
         targetCamera.fieldOfView = Mathf.Lerp(targetCamera.fieldOfView, targetFOV, Time.deltaTime * fovTransitionSpeed);
@@ -78,7 +78,6 @@ public class CameraEffects : MonoBehaviour
             float frequency = playerMovement.IsRunning ? bobFrequencyRun : bobFrequencyWalk;
             timer += Time.deltaTime * frequency;
 
-            // Kurva sinus ganda: Osilasi vertikal (Y) dan horizontal (X) membentuk ritme langkah natural
             float bobY = Mathf.Sin(timer) * bobAmountY;
             float bobX = Mathf.Cos(timer * 0.5f) * bobAmountX;
 
@@ -97,12 +96,11 @@ public class CameraEffects : MonoBehaviour
         float horizontalInput = Input.GetAxisRaw("Horizontal");
         float mouseX = Input.GetAxis("Mouse X");
 
-        // Roll tilt saat strafe ke samping dan saat kamera menoleh cepat
         targetRoll = (-horizontalInput * maxStrafeRoll) + (-mouseX * maxTurnRoll);
         currentRoll = Mathf.Lerp(currentRoll, targetRoll, Time.deltaTime * rollSmoothing);
 
         Vector3 currentEuler = transform.localEulerAngles;
-        // Pertahankan pitch dan yaw dari MouseLook, hanya timpa roll (Z)
+
         transform.localEulerAngles = new Vector3(currentEuler.x, currentEuler.y, currentRoll);
     }
 

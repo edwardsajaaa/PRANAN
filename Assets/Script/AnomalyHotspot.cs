@@ -34,28 +34,22 @@ public class AnomalyHotspot : MonoBehaviour
         currentDwellTime = 0f;
     }
 
-    /// <summary>
-    /// Mengevaluasi apakah hotspot sedang disorot dan menghadap kamera (W1-10)
-    /// Menggunakan Time.unscaledDeltaTime karena Time.timeScale = 0 saat inspeksi (W1-08)
-    /// </summary>
     public bool EvaluateObservation(Camera inspectionCam, Vector2 screenCenter)
     {
         if (isDiscovered) return true;
 
-        // 1. Cek apakah hotspot menghadap kamera (Normal hadap)
         Vector3 dirToCamera = (inspectionCam.transform.position - transform.position).normalized;
         float dotProduct = Vector3.Dot(transform.forward, dirToCamera);
 
         if (dotProduct < facingAngleDotThreshold)
         {
-            // Hotspot membelakangi kamera
+
             DecreaseDwell();
             return false;
         }
 
-        // 2. Cek apakah berada dalam radius bidikan kursor layar
         Vector3 screenPos = inspectionCam.WorldToScreenPoint(transform.position);
-        if (screenPos.z < 0) // Di belakang frustum kamera
+        if (screenPos.z < 0)
         {
             DecreaseDwell();
             return false;
@@ -64,7 +58,7 @@ public class AnomalyHotspot : MonoBehaviour
         float screenDistance = Vector2.Distance(screenCenter, new Vector2(screenPos.x, screenPos.y));
         if (screenDistance <= screenRadius)
         {
-            // Sedang diobservasi tepat di titik anomali!
+
             currentDwellTime += Time.unscaledDeltaTime;
             OnDwellProgressChanged?.Invoke(DwellProgress);
 

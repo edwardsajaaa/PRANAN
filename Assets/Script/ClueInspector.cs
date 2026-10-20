@@ -81,17 +81,14 @@ public class ClueInspector : MonoBehaviour
         activeClue = clue;
         isInspecting = true;
 
-        // 1. Ganti Game State ke Inspection & Freeze Time (W1-08 & W1-11)
         if (GameStateManager.Instance != null)
         {
             GameStateManager.Instance.SetState(GameState.Inspection);
         }
 
-        // 2. Aktifkan Studio Kamera & Pencahayaan 3 Titik (Key, Fill, Back light)
         if (inspectionCamera != null) inspectionCamera.gameObject.SetActive(true);
         if (threePointLightingSetup != null) threePointLightingSetup.SetActive(true);
 
-        // Ambil snapshot pemandangan game saat ini dan terapkan efek blur
         CaptureBlurredBackground();
 
         if (Camera.main != null && Camera.main != inspectionCamera)
@@ -100,25 +97,18 @@ public class ClueInspector : MonoBehaviour
             cachedMainCamera.gameObject.SetActive(false);
         }
 
-        // 3. Spawn model 3D di studio pivot
         SetupInspectionModel(clue);
 
-        // 4. Reset rotasi dan zoom awal yang proporsional (tidak terlalu dekat/nge-zoom)
         angularVelocity = Vector2.zero;
         currentZoom = CalculateIdealZoom(spawnedInspectionModel);
         UpdateCameraPosition();
 
-        // 5. Tampilkan UI
         if (inspectionUI != null)
         {
             inspectionUI.Show(clue);
         }
     }
 
-    /// <summary>
-    /// Menghitung jarak kamera awal yang ideal berdasarkan ukuran fisik 3D model
-    /// agar pas membingkai objek di tengah layar (memberi margin ~40% ruang kosong di layar).
-    /// </summary>
     private float CalculateIdealZoom(GameObject targetModel)
     {
         if (targetModel == null) return defaultZoomDistance;
@@ -163,7 +153,7 @@ public class ClueInspector : MonoBehaviour
 
         float maxDim = Mathf.Max(combinedBounds.size.x, Mathf.Max(combinedBounds.size.y, combinedBounds.size.z));
         float fov = (inspectionCamera != null) ? inspectionCamera.fieldOfView : 60f;
-        float padding = 1.75f; // Margin framing proporsional (pas seperti screenshot 2)
+        float padding = 1.75f;
 
         float idealDist = (maxDim * 0.5f) / Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad) * padding;
         return Mathf.Clamp(idealDist, minZoomDistance, maxZoomDistance);
@@ -200,7 +190,7 @@ public class ClueInspector : MonoBehaviour
             Canvas bgCanvas = bgCanvasObj.AddComponent<Canvas>();
             bgCanvas.renderMode = RenderMode.ScreenSpaceCamera;
             bgCanvas.worldCamera = inspectionCamera;
-            bgCanvas.planeDistance = 30f; // Di belakang model 3D
+            bgCanvas.planeDistance = 30f;
             bgCanvas.sortingOrder = -50;
             bgCanvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
 
@@ -213,7 +203,7 @@ public class ClueInspector : MonoBehaviour
             rect.offsetMax = Vector2.zero;
 
             backgroundRawImage = bgImageObj.AddComponent<UnityEngine.UI.RawImage>();
-            // Warna transparan sedikit gelap agar latar pemandangan game tetap terlihat kabur (blur)
+
             backgroundRawImage.color = new Color(0.45f, 0.48f, 0.52f, 0.88f);
         }
 
@@ -223,7 +213,6 @@ public class ClueInspector : MonoBehaviour
             threePointLightingSetup.transform.SetParent(studioPivot);
             threePointLightingSetup.transform.localPosition = Vector3.zero;
 
-            // Key Light
             GameObject keyLightObj = new GameObject("KeyLight");
             keyLightObj.transform.SetParent(threePointLightingSetup.transform);
             Light keyLight = keyLightObj.AddComponent<Light>();
@@ -232,7 +221,6 @@ public class ClueInspector : MonoBehaviour
             keyLight.color = new Color(1f, 0.95f, 0.9f);
             keyLightObj.transform.rotation = Quaternion.Euler(45, 45, 0);
 
-            // Fill Light
             GameObject fillLightObj = new GameObject("FillLight");
             fillLightObj.transform.SetParent(threePointLightingSetup.transform);
             Light fillLight = fillLightObj.AddComponent<Light>();
@@ -241,7 +229,6 @@ public class ClueInspector : MonoBehaviour
             fillLight.color = new Color(0.8f, 0.9f, 1f);
             fillLightObj.transform.rotation = Quaternion.Euler(30, -135, 0);
 
-            // Back Light
             GameObject backLightObj = new GameObject("BackLight");
             backLightObj.transform.SetParent(threePointLightingSetup.transform);
             Light backLight = backLightObj.AddComponent<Light>();
@@ -261,10 +248,6 @@ public class ClueInspector : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Menangkap tampilan kamera game saat ini dan menerapkan downsample/upsample bilinear blur
-    /// sehingga latar belakang studio menampilkan pemandangan game yang diburamkan secara artistik.
-    /// </summary>
     private void CaptureBlurredBackground()
     {
         Camera cam = (cachedMainCamera != null && cachedMainCamera.gameObject.activeInHierarchy) ? cachedMainCamera : Camera.main;
@@ -281,7 +264,6 @@ public class ClueInspector : MonoBehaviour
         cam.Render();
         cam.targetTexture = prevTarget;
 
-        // Downsampling dan interpolasi bilinear untuk efek blur halus
         Graphics.Blit(rt1, rt2);
         if (blurredBackgroundRT != null)
         {
@@ -321,7 +303,6 @@ public class ClueInspector : MonoBehaviour
         InspectionUI ui = canvasObj.AddComponent<InspectionUI>();
         ui.inspectionPanel = panel;
 
-        // Title Text
         GameObject titleObj = new GameObject("TitleText");
         titleObj.transform.SetParent(panel.transform, false);
         var titleRect = titleObj.AddComponent<RectTransform>();
@@ -336,7 +317,6 @@ public class ClueInspector : MonoBehaviour
         titleTmp.color = Color.white;
         ui.titleText = titleTmp;
 
-        // Description Text
         GameObject descObj = new GameObject("DescriptionText");
         descObj.transform.SetParent(panel.transform, false);
         var descRect = descObj.AddComponent<RectTransform>();
@@ -350,7 +330,6 @@ public class ClueInspector : MonoBehaviour
         descTmp.color = new Color(0.85f, 0.85f, 0.85f);
         ui.descriptionText = descTmp;
 
-        // Status log text
         GameObject statusObj = new GameObject("StatusLogText");
         statusObj.transform.SetParent(panel.transform, false);
         var statusRect = statusObj.AddComponent<RectTransform>();
@@ -364,7 +343,6 @@ public class ClueInspector : MonoBehaviour
         statusTmp.color = Color.white;
         ui.statusLogText = statusTmp;
 
-        // Instruction / Close Button
         GameObject closeObj = new GameObject("CloseButton");
         closeObj.transform.SetParent(panel.transform, false);
         var closeRect = closeObj.AddComponent<RectTransform>();
@@ -396,7 +374,7 @@ public class ClueInspector : MonoBehaviour
 
     private void SetupInspectionModel(InteractableObject clue)
     {
-        // Bersihkan model sebelumnya jika ada
+
         if (spawnedInspectionModel != null)
         {
             Destroy(spawnedInspectionModel);
@@ -405,13 +383,11 @@ public class ClueInspector : MonoBehaviour
 
         Transform parentTransform = studioPivot != null ? studioPivot : transform;
 
-        // Gunakan prefab model inspeksi jika disediakan, atau salinan dari objek dunia
         GameObject sourceObject = clue.inspectionModelPrefab != null ? clue.inspectionModelPrefab : clue.gameObject;
         spawnedInspectionModel = Instantiate(sourceObject, parentTransform.position, parentTransform.rotation, parentTransform);
         spawnedInspectionModel.transform.localPosition = Vector3.zero;
         spawnedInspectionModel.transform.localRotation = Quaternion.identity;
 
-        // Nonaktifkan physics gravity dan collider fisik pada model studio agar tidak jatuh/bentrok
         var rigidbodies = spawnedInspectionModel.GetComponentsInChildren<Rigidbody>();
         foreach (var rb in rigidbodies)
         {
@@ -422,11 +398,10 @@ public class ClueInspector : MonoBehaviour
         var colliders = spawnedInspectionModel.GetComponentsInChildren<Collider>();
         foreach (var col in colliders)
         {
-            // Pertahankan trigger jika digunakan untuk hotspot, disable collider penghalang raycast
+
             if (!col.isTrigger) col.enabled = false;
         }
 
-        // Cari semua AnomalyHotspot pada model inspeksi
         var hotspots = spawnedInspectionModel.GetComponentsInChildren<AnomalyHotspot>();
         foreach (var hs in hotspots)
         {
@@ -439,14 +414,13 @@ public class ClueInspector : MonoBehaviour
 
     private void HandleInput()
     {
-        // Tombol Escape untuk menutup inspeksi
+
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             CloseInspection();
             return;
         }
 
-        // Drag klik kiri mouse untuk memutar model
         if (Input.GetMouseButtonDown(0))
         {
             isDragging = true;
@@ -464,14 +438,11 @@ public class ClueInspector : MonoBehaviour
         }
         else
         {
-            // Deselerasi putaran lambat saat klik dilepas (Damping W1-09)
+
             angularVelocity = Vector2.Lerp(angularVelocity, Vector2.zero, Time.unscaledDeltaTime * dampingRate);
         }
     }
 
-    /// <summary>
-    /// Rotasi 360 derajat simultan pada sumbu X & Y berbasis Quaternion untuk mencegah gimbal lock (W1-09)
-    /// </summary>
     private void ApplyGyroscopicRotation()
     {
         if (spawnedInspectionModel == null || angularVelocity.sqrMagnitude < 0.0001f) return;
@@ -582,7 +553,6 @@ public class ClueInspector : MonoBehaviour
             cachedMainCamera = null;
         }
 
-        // Kembalikan ke state Exploration (W1-11)
         if (GameStateManager.Instance != null)
         {
             GameStateManager.Instance.SetState(GameState.Exploration);
