@@ -36,7 +36,7 @@ public class ClueInspector : MonoBehaviour
     public float zoomSensitivity = 0.5f;
     public float minZoomDistance = 0.8f;
     public float maxZoomDistance = 6.0f;
-    public float defaultZoomDistance = 2.4f;
+    public float defaultZoomDistance = 2.5f;
 
     private InteractableObject activeClue;
     private GameObject spawnedInspectionModel;
@@ -153,10 +153,12 @@ public class ClueInspector : MonoBehaviour
 
         float maxDim = Mathf.Max(combinedBounds.size.x, Mathf.Max(combinedBounds.size.y, combinedBounds.size.z));
         float fov = (inspectionCamera != null) ? inspectionCamera.fieldOfView : 60f;
-        float padding = 1.75f;
+        float padding = 2.85f;
 
         float idealDist = (maxDim * 0.5f) / Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad) * padding;
-        return Mathf.Clamp(idealDist, minZoomDistance, maxZoomDistance);
+        minZoomDistance = Mathf.Max(0.5f, idealDist * 0.4f);
+        maxZoomDistance = Mathf.Max(minZoomDistance + 1f, idealDist * 2.2f);
+        return idealDist;
     }
 
     private void EnsureStudioReady()
