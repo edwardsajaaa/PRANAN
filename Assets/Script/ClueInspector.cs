@@ -47,6 +47,8 @@ public class ClueInspector : MonoBehaviour
     private bool isDragging = false;
     private bool isInspecting = false;
     private Camera cachedMainCamera;
+    private UnityEngine.UI.RawImage backgroundRawImage;
+    private RenderTexture blurredBackgroundRT;
 
     private void Awake()
     {
@@ -89,6 +91,9 @@ public class ClueInspector : MonoBehaviour
         if (inspectionCamera != null) inspectionCamera.gameObject.SetActive(true);
         if (threePointLightingSetup != null) threePointLightingSetup.SetActive(true);
 
+        // Ambil snapshot pemandangan game saat ini dan terapkan efek blur
+        CaptureBlurredBackground();
+
         if (Camera.main != null && Camera.main != inspectionCamera)
         {
             cachedMainCamera = Camera.main;
@@ -128,10 +133,34 @@ public class ClueInspector : MonoBehaviour
             camObj.transform.localRotation = Quaternion.identity;
             inspectionCamera = camObj.AddComponent<Camera>();
             inspectionCamera.clearFlags = CameraClearFlags.SolidColor;
-            inspectionCamera.backgroundColor = new Color(0.1f, 0.12f, 0.15f, 1f);
+            inspectionCamera.backgroundColor = new Color(0.08f, 0.09f, 0.12f, 1f);
             inspectionCamera.depth = 20f;
             inspectionCamera.nearClipPlane = 0.05f;
-            inspectionCamera.farClipPlane = 50f;
+            inspectionCamera.farClipPlane = 100f;
+        }
+
+        if (backgroundRawImage == null)
+        {
+            GameObject bgCanvasObj = new GameObject("InspectionBackgroundCanvas");
+            bgCanvasObj.transform.SetParent(studioPivot);
+            Canvas bgCanvas = bgCanvasObj.AddComponent<Canvas>();
+            bgCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+            bgCanvas.worldCamera = inspectionCamera;
+            bgCanvas.planeDistance = 30f; // Di belakang model 3D
+            bgCanvas.sortingOrder = -50;
+            bgCanvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+
+            GameObject bgImageObj = new GameObject("BlurredBackground");
+            bgImageObj.transform.SetParent(bgCanvasObj.transform, false);
+            var rect = bgImageObj.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            backgroundRawImage = bgImageObj.AddComponent<UnityEngine.UI.RawImage>();
+            // Warna transparan sedikit gelap agar latar pemandangan game tetap terlihat kabur (blur)
+            backgroundRawImage.color = new Color(0.45f, 0.48f, 0.52f, 0.88f);
         }
 
         if (threePointLightingSetup == null)
@@ -175,6 +204,46 @@ public class ClueInspector : MonoBehaviour
             {
                 inspectionUI = CreateFallbackUI();
             }
+        }
+    }
+
+    /// <summary>
+    /// Menangkap tampilan kamera game saat ini dan menerapkan downsample/upsample bilinear blur
+    /// sehingga latar belakang studio menampilkan pemandangan game yang diburamkan secara artistik.
+    /// </summary>
+    private void CaptureBlurredBackground()
+    {
+        Camera cam = (cachedMainCamera != null && cachedMainCamera.gameObject.activeInHierarchy) ? cachedMainCamera : Camera.main;
+        if (cam == null) return;
+
+        int width = Mathf.Max(Screen.width / 4, 320);
+        int height = Mathf.Max(Screen.height / 4, 180);
+
+        RenderTexture rt1 = RenderTexture.GetTemporary(width, height, 16);
+        RenderTexture rt2 = RenderTexture.GetTemporary(width / 2, height / 2, 0);
+
+        RenderTexture prevTarget = cam.targetTexture;
+        cam.targetTexture = rt1;
+        cam.Render();
+        cam.targetTexture = prevTarget;
+
+        // Downsampling dan interpolasi bilinear untuk efek blur halus
+        Graphics.Blit(rt1, rt2);
+        if (blurredBackgroundRT != null)
+        {
+            blurredBackgroundRT.Release();
+        }
+        blurredBackgroundRT = new RenderTexture(width, height, 0);
+        blurredBackgroundRT.filterMode = FilterMode.Bilinear;
+        Graphics.Blit(rt2, blurredBackgroundRT);
+
+        RenderTexture.ReleaseTemporary(rt1);
+        RenderTexture.ReleaseTemporary(rt2);
+
+        if (backgroundRawImage != null)
+        {
+            backgroundRawImage.texture = blurredBackgroundRT;
+            backgroundRawImage.gameObject.SetActive(true);
         }
     }
 
@@ -439,6 +508,19 @@ public class ClueInspector : MonoBehaviour
         if (inspectionCamera != null) inspectionCamera.gameObject.SetActive(false);
         if (threePointLightingSetup != null) threePointLightingSetup.SetActive(false);
         if (inspectionUI != null) inspectionUI.Hide();
+
+        if (backgroundRawImage != null)
+        {
+            backgroundRawImage.gameObject.SetActive(false);
+            backgroundRawImage.texture = null;
+        }
+
+        if (blurredBackgroundRT != null)
+        {
+            blurredBackgroundRT.Release();
+            Destroy(blurredBackgroundRT);
+            blurredBackgroundRT = null;
+        }
 
         if (cachedMainCamera != null)
         {
