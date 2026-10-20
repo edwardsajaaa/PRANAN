@@ -32,9 +32,31 @@ public class InteractableObject : MonoBehaviour
     public Vector3 TargetPosition => targetPivot != null ? targetPivot.position : transform.position;
 
     /// <summary>
-    /// Mengecek apakah pemain berada dalam jarak jangkau fisik dari permukaan Collider objek ini.
-    /// Mendukung segala jenis bentuk 3D: kotak, silinder, pohon tumbang panjang, maupun mesh kompleks.
-    /// Memperhitungkan posisi mata dan kaki pemain sehingga saat berdiri di atas tanah, semua sisi objek langsung terjangkau.
+    /// Menghitung jarak jangkauan interaksi secara dinamis dan otomatis berdasarkan ukuran fisik Collider objek ini.
+    /// Objek kecil (alat, buku) otomatis membutuhkan jarak dekat,
+    /// sedangkan objek sedang (kubus 1m) dan besar (pohon tumbang) jangkauannya otomatis meluas secara proporsional.
+    /// </summary>
+    public float GetDynamicInteractionReach(Collider col)
+    {
+        if (customInteractionRange > 0.05f) return customInteractionRange;
+        if (col == null) return 2.5f;
+
+        // Ambil dimensi terpanjang dari bounds collider objek ini
+        Vector3 size = col.bounds.size;
+        float maxDimension = Mathf.Max(size.x, Mathf.Max(size.y, size.z));
+
+        // Formula proporsional adaptif:
+        // Ukuran 0.3m (benda kecil)  -> reach ~1.8m
+        // Ukuran 1.0m (kubus sedang) -> reach ~2.5m
+        // Ukuran 5.0m (benda besar)  -> reach ~5.0m
+        // Ukuran 10m+ (pohon/mesin)  -> reach ~8.0m (maksimal clamped 12m)
+        float dynamicReach = Mathf.Clamp(1.6f + (maxDimension * 0.9f), 1.8f, 12f);
+        return dynamicReach;
+    }
+
+    /// <summary>
+    /// Mengecek apakah pemain berada dalam jangkauan fisik dari permukaan Collider objek ini.
+    /// Memperhitungkan posisi mata dan kaki pemain serta ukuran dinamis collider.
     /// </summary>
     public bool IsInInteractionRange(Collider col, Vector3 playerEyePos, Vector3 playerBodyPos)
     {
@@ -48,10 +70,8 @@ public class InteractableObject : MonoBehaviour
         float distBody = Vector3.Distance(playerBodyPos, closestToBody);
         float distanceToSurface = Mathf.Min(distEye, distBody);
 
-        float tolerance = (surfaceProximityTolerance > 0.1f) ? surfaceProximityTolerance : 3.5f;
-        float maxAllowed = (customInteractionRange > 0.05f) ? customInteractionRange : Mathf.Max(tolerance, 3.5f);
-
-        return distanceToSurface <= maxAllowed;
+        float allowedRange = GetDynamicInteractionReach(col);
+        return distanceToSurface <= allowedRange;
     }
 
     public virtual void Interact(Transform playerTransform)
