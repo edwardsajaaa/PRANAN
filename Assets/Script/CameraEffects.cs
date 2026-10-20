@@ -6,30 +6,35 @@ public class CameraEffects : MonoBehaviour
     public PlayerMovement playerMovement;
     public Camera targetCamera;
 
-    [Header("Dynamic FOV")]
-    public float walkFOV = 65f;
-    public float runFOV = 75f;
-    public float fovTransitionSpeed = 5f;
+    [Header("Cinematic FOV")]
+    public float walkFOV = 66f;
+    public float runFOV = 74f;
+    public float fovTransitionSpeed = 4f;
 
-    [Header("Human Walking Bounce & Sway")]
-    public float bobFrequencyWalk = 9.0f;
-    public float bobFrequencyRun = 13.5f;
-    public float bobAmountYWalk = 0.06f;
-    public float bobAmountYRun = 0.09f;
-    public float bobAmountXWalk = 0.035f;
-    public float bobAmountXRun = 0.05f;
-    public float bobSmoothSpeed = 12f;
+    [Header("Grounded Walking Dynamics")]
+    public float bobFrequencyWalk = 8.5f;
+    public float bobFrequencyRun = 13.0f;
+    public float bobAmountYWalk = 0.055f;
+    public float bobAmountYRun = 0.085f;
+    public float bobAmountXWalk = 0.030f;
+    public float bobAmountXRun = 0.045f;
+    public float bobSmoothSpeed = 10f;
 
-    [Header("Head Rotational Nod & Roll")]
-    public float bobPitchNod = 1.2f;
-    public float bobRollSway = 1.4f;
-    public float maxStrafeRoll = 2.0f;
-    public float maxTurnRoll = 1.5f;
-    public float rollSmoothing = 8f;
+    [Header("Cinematic Neck Nod & Lean")]
+    public float bobPitchNod = 1.1f;
+    public float bobRollSway = 1.3f;
+    public float maxStrafeRoll = 1.8f;
+    public float maxTurnRoll = 1.4f;
+    public float rollSmoothing = 7f;
 
-    [Header("Idle Breathing")]
-    public float idleBreathingFrequency = 1.8f;
-    public float idleBreathingAmount = 0.008f;
+    [Header("Organic Idle Breathing")]
+    public float breathingSpeed = 1.4f;
+    public float breathingAmountY = 0.007f;
+    public float breathingAmountRoll = 0.25f;
+
+    [Header("Landing Impact Cushion")]
+    public float landingImpactStrength = 0.04f;
+    public float landingRecoverySpeed = 6f;
 
     private Vector3 originalLocalPos;
     private float stepTimer = 0f;
@@ -38,6 +43,9 @@ public class CameraEffects : MonoBehaviour
     private float targetRoll = 0f;
     private float currentBobPitch = 0f;
     private float currentBobRoll = 0f;
+    private float currentLandingDip = 0f;
+    private bool wasGroundedLastFrame = true;
+    private float lastAirborneVelocity = 0f;
 
     void Start()
     {
@@ -61,6 +69,7 @@ public class CameraEffects : MonoBehaviour
         }
 
         HandleDynamicFOV();
+        HandleLandingImpact();
         HandleHeadBobAndMotion();
         HandleRollTilt();
     }
@@ -76,6 +85,28 @@ public class CameraEffects : MonoBehaviour
         targetCamera.fieldOfView = Mathf.Lerp(targetCamera.fieldOfView, targetFOV, Time.deltaTime * fovTransitionSpeed);
     }
 
+    private void HandleLandingImpact()
+    {
+        if (playerMovement == null) return;
+
+        bool isGrounded = playerMovement.IsGrounded;
+        float currentVertVel = playerMovement.CurrentVelocity.y;
+
+        if (!wasGroundedLastFrame && isGrounded && lastAirborneVelocity < -1.5f)
+        {
+            float impactRatio = Mathf.Clamp01(Mathf.Abs(lastAirborneVelocity) / 10f);
+            currentLandingDip = impactRatio * landingImpactStrength;
+        }
+
+        if (!isGrounded)
+        {
+            lastAirborneVelocity = currentVertVel;
+        }
+
+        wasGroundedLastFrame = isGrounded;
+        currentLandingDip = Mathf.Lerp(currentLandingDip, 0f, Time.deltaTime * landingRecoverySpeed);
+    }
+
     private void HandleHeadBobAndMotion()
     {
         if (playerMovement == null) return;
@@ -89,7 +120,7 @@ public class CameraEffects : MonoBehaviour
 
         if (isMovingOnGround)
         {
-            float speedFactor = Mathf.Clamp(speed / Mathf.Max(playerMovement.walkSpeed, 0.1f), 0.5f, 2.0f);
+            float speedFactor = Mathf.Clamp(speed / Mathf.Max(playerMovement.walkSpeed, 0.1f), 0.6f, 1.8f);
             float baseFreq = playerMovement.IsRunning ? bobFrequencyRun : bobFrequencyWalk;
             stepTimer += Time.deltaTime * baseFreq * speedFactor;
 
@@ -99,18 +130,21 @@ public class CameraEffects : MonoBehaviour
             float footStepBounce = -Mathf.Abs(Mathf.Sin(stepTimer)) * curBobY;
             float lateralSway = Mathf.Cos(stepTimer * 0.5f) * curBobX;
 
-            targetPos = originalLocalPos + new Vector3(lateralSway, footStepBounce, 0f);
+            targetPos = originalLocalPos + new Vector3(lateralSway, footStepBounce - currentLandingDip, 0f);
 
             targetBobPitch = Mathf.Sin(stepTimer) * bobPitchNod;
             targetBobRoll = Mathf.Cos(stepTimer * 0.5f) * bobRollSway;
         }
         else
         {
-            idleTimer += Time.deltaTime * idleBreathingFrequency;
-            float breathY = Mathf.Sin(idleTimer) * idleBreathingAmount;
-            float breathX = Mathf.Cos(idleTimer * 0.5f) * (idleBreathingAmount * 0.5f);
-            targetPos = originalLocalPos + new Vector3(breathX, breathY, 0f);
+            idleTimer += Time.deltaTime * breathingSpeed;
+            float breathPrimary = Mathf.Sin(idleTimer) * breathingAmountY;
+            float breathSecondary = Mathf.Sin(idleTimer * 0.6f + 0.8f) * (breathingAmountY * 0.4f);
+            float breathX = Mathf.Cos(idleTimer * 0.5f) * (breathingAmountY * 0.35f);
 
+            targetPos = originalLocalPos + new Vector3(breathX, breathPrimary + breathSecondary - currentLandingDip, 0f);
+
+            targetBobRoll = Mathf.Cos(idleTimer * 0.5f) * breathingAmountRoll;
             stepTimer = Mathf.Lerp(stepTimer, 0f, Time.deltaTime * 2f);
         }
 
@@ -138,5 +172,6 @@ public class CameraEffects : MonoBehaviour
         currentRoll = Mathf.Lerp(currentRoll, 0f, Time.deltaTime * rollSmoothing);
         currentBobPitch = Mathf.Lerp(currentBobPitch, 0f, Time.deltaTime * rollSmoothing);
         currentBobRoll = Mathf.Lerp(currentBobRoll, 0f, Time.deltaTime * rollSmoothing);
+        currentLandingDip = 0f;
     }
 }

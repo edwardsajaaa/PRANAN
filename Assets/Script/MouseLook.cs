@@ -49,13 +49,14 @@ public class MouseLook : MonoBehaviour
         targetXRotation = Mathf.Clamp(targetXRotation, minPitch, maxPitch);
         targetYRotation += mouseX;
 
-        currentXRotation = Mathf.Lerp(currentXRotation, targetXRotation, Time.deltaTime * smoothing);
+        float t = 1f - Mathf.Exp(-smoothing * Time.deltaTime);
+        currentXRotation = Mathf.Lerp(currentXRotation, targetXRotation, t);
         Quaternion targetBodyRotation = Quaternion.Euler(0f, targetYRotation, 0f);
 
         transform.localRotation = Quaternion.Euler(currentXRotation, 0f, 0f);
         if (playerBody != null)
         {
-            playerBody.rotation = Quaternion.Slerp(playerBody.rotation, targetBodyRotation, Time.deltaTime * smoothing);
+            playerBody.rotation = Quaternion.Slerp(playerBody.rotation, targetBodyRotation, t);
         }
     }
 }
