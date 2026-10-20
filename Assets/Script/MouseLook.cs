@@ -16,6 +16,14 @@ public class MouseLook : MonoBehaviour
     private float targetYRotation = 0f;
     private float currentXRotation = 0f;
 
+    void Awake()
+    {
+        if (GetComponent<CameraEffects>() == null)
+        {
+            gameObject.AddComponent<CameraEffects>();
+        }
+    }
+
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
