@@ -10,7 +10,23 @@ public enum GameState
 
 public class GameStateManager : MonoBehaviour
 {
-    public static GameStateManager Instance { get; private set; }
+    private static GameStateManager instance;
+    public static GameStateManager Instance
+    {
+        get
+        {
+            if (instance == null)
+            {
+                instance = FindObjectOfType<GameStateManager>();
+                if (instance == null)
+                {
+                    GameObject go = new GameObject("GameStateManager");
+                    instance = go.AddComponent<GameStateManager>();
+                }
+            }
+            return instance;
+        }
+    }
 
     [Header("Current State")]
     [SerializeField] private GameState currentState = GameState.Exploration;
@@ -20,12 +36,12 @@ public class GameStateManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (instance != null && instance != this)
         {
             Destroy(gameObject);
             return;
         }
-        Instance = this;
+        instance = this;
     }
 
     private void Start()

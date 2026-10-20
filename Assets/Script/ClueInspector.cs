@@ -3,7 +3,23 @@ using System.Collections.Generic;
 
 public class ClueInspector : MonoBehaviour
 {
-    public static ClueInspector Instance { get; private set; }
+    private static ClueInspector instance;
+    public static ClueInspector Instance
+    {
+        get
+        {
+            if (instance == null)
+            {
+                instance = Object.FindObjectOfType<ClueInspector>();
+                if (instance == null)
+                {
+                    GameObject go = new GameObject("InspectionStudio");
+                    instance = go.AddComponent<ClueInspector>();
+                }
+            }
+            return instance;
+        }
+    }
 
     [Header("Inspection Studio Setup (W1-08)")]
     public Camera inspectionCamera;
@@ -30,15 +46,16 @@ public class ClueInspector : MonoBehaviour
     private float currentZoom;
     private bool isDragging = false;
     private bool isInspecting = false;
+    private Camera cachedMainCamera;
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (instance != null && instance != this)
         {
             Destroy(gameObject);
             return;
         }
-        Instance = this;
+        instance = this;
 
         if (inspectionCamera != null) inspectionCamera.gameObject.SetActive(false);
         if (threePointLightingSetup != null) threePointLightingSetup.SetActive(false);
@@ -58,6 +75,7 @@ public class ClueInspector : MonoBehaviour
     public void StartInspection(InteractableObject clue)
     {
         if (clue == null) return;
+        EnsureStudioReady();
         activeClue = clue;
         isInspecting = true;
 
@@ -70,6 +88,12 @@ public class ClueInspector : MonoBehaviour
         // 2. Aktifkan Studio Kamera & Pencahayaan 3 Titik (Key, Fill, Back light)
         if (inspectionCamera != null) inspectionCamera.gameObject.SetActive(true);
         if (threePointLightingSetup != null) threePointLightingSetup.SetActive(true);
+
+        if (Camera.main != null && Camera.main != inspectionCamera)
+        {
+            cachedMainCamera = Camera.main;
+            cachedMainCamera.gameObject.SetActive(false);
+        }
 
         // 3. Spawn model 3D di studio pivot
         SetupInspectionModel(clue);
@@ -84,6 +108,167 @@ public class ClueInspector : MonoBehaviour
         {
             inspectionUI.Show(clue);
         }
+    }
+
+    private void EnsureStudioReady()
+    {
+        if (studioPivot == null)
+        {
+            GameObject pivotObj = new GameObject("StudioPivot");
+            pivotObj.transform.SetParent(transform);
+            pivotObj.transform.position = new Vector3(0, 1000f, 0);
+            studioPivot = pivotObj.transform;
+        }
+
+        if (inspectionCamera == null)
+        {
+            GameObject camObj = new GameObject("InspectionCamera");
+            camObj.transform.SetParent(studioPivot);
+            camObj.transform.localPosition = new Vector3(0, 0, -defaultZoomDistance);
+            camObj.transform.localRotation = Quaternion.identity;
+            inspectionCamera = camObj.AddComponent<Camera>();
+            inspectionCamera.clearFlags = CameraClearFlags.SolidColor;
+            inspectionCamera.backgroundColor = new Color(0.1f, 0.12f, 0.15f, 1f);
+            inspectionCamera.depth = 20f;
+            inspectionCamera.nearClipPlane = 0.05f;
+            inspectionCamera.farClipPlane = 50f;
+        }
+
+        if (threePointLightingSetup == null)
+        {
+            threePointLightingSetup = new GameObject("ThreePointLighting");
+            threePointLightingSetup.transform.SetParent(studioPivot);
+            threePointLightingSetup.transform.localPosition = Vector3.zero;
+
+            // Key Light
+            GameObject keyLightObj = new GameObject("KeyLight");
+            keyLightObj.transform.SetParent(threePointLightingSetup.transform);
+            Light keyLight = keyLightObj.AddComponent<Light>();
+            keyLight.type = LightType.Directional;
+            keyLight.intensity = 1.2f;
+            keyLight.color = new Color(1f, 0.95f, 0.9f);
+            keyLightObj.transform.rotation = Quaternion.Euler(45, 45, 0);
+
+            // Fill Light
+            GameObject fillLightObj = new GameObject("FillLight");
+            fillLightObj.transform.SetParent(threePointLightingSetup.transform);
+            Light fillLight = fillLightObj.AddComponent<Light>();
+            fillLight.type = LightType.Directional;
+            fillLight.intensity = 0.7f;
+            fillLight.color = new Color(0.8f, 0.9f, 1f);
+            fillLightObj.transform.rotation = Quaternion.Euler(30, -135, 0);
+
+            // Back Light
+            GameObject backLightObj = new GameObject("BackLight");
+            backLightObj.transform.SetParent(threePointLightingSetup.transform);
+            Light backLight = backLightObj.AddComponent<Light>();
+            backLight.type = LightType.Directional;
+            backLight.intensity = 0.9f;
+            backLight.color = Color.white;
+            backLightObj.transform.rotation = Quaternion.Euler(-30, 180, 0);
+        }
+
+        if (inspectionUI == null)
+        {
+            inspectionUI = Object.FindObjectOfType<InspectionUI>();
+            if (inspectionUI == null)
+            {
+                inspectionUI = CreateFallbackUI();
+            }
+        }
+    }
+
+    private InspectionUI CreateFallbackUI()
+    {
+        GameObject canvasObj = new GameObject("InspectionCanvas");
+        Canvas canvas = canvasObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 50;
+        canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+        canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+
+        GameObject panel = new GameObject("InspectionPanel");
+        panel.transform.SetParent(canvasObj.transform, false);
+        var panelRect = panel.AddComponent<RectTransform>();
+        panelRect.anchorMin = Vector2.zero;
+        panelRect.anchorMax = Vector2.one;
+        panelRect.offsetMin = Vector2.zero;
+        panelRect.offsetMax = Vector2.zero;
+
+        InspectionUI ui = canvasObj.AddComponent<InspectionUI>();
+        ui.inspectionPanel = panel;
+
+        // Title Text
+        GameObject titleObj = new GameObject("TitleText");
+        titleObj.transform.SetParent(panel.transform, false);
+        var titleRect = titleObj.AddComponent<RectTransform>();
+        titleRect.anchorMin = new Vector2(0.5f, 1f);
+        titleRect.anchorMax = new Vector2(0.5f, 1f);
+        titleRect.anchoredPosition = new Vector2(0, -60);
+        titleRect.sizeDelta = new Vector2(600, 50);
+        var titleTmp = titleObj.AddComponent<TMPro.TextMeshProUGUI>();
+        titleTmp.alignment = TMPro.TextAlignmentOptions.Center;
+        titleTmp.fontSize = 28;
+        titleTmp.fontStyle = TMPro.FontStyles.Bold;
+        titleTmp.color = Color.white;
+        ui.titleText = titleTmp;
+
+        // Description Text
+        GameObject descObj = new GameObject("DescriptionText");
+        descObj.transform.SetParent(panel.transform, false);
+        var descRect = descObj.AddComponent<RectTransform>();
+        descRect.anchorMin = new Vector2(0.5f, 1f);
+        descRect.anchorMax = new Vector2(0.5f, 1f);
+        descRect.anchoredPosition = new Vector2(0, -110);
+        descRect.sizeDelta = new Vector2(700, 60);
+        var descTmp = descObj.AddComponent<TMPro.TextMeshProUGUI>();
+        descTmp.alignment = TMPro.TextAlignmentOptions.Center;
+        descTmp.fontSize = 18;
+        descTmp.color = new Color(0.85f, 0.85f, 0.85f);
+        ui.descriptionText = descTmp;
+
+        // Status log text
+        GameObject statusObj = new GameObject("StatusLogText");
+        statusObj.transform.SetParent(panel.transform, false);
+        var statusRect = statusObj.AddComponent<RectTransform>();
+        statusRect.anchorMin = new Vector2(0.5f, 0f);
+        statusRect.anchorMax = new Vector2(0.5f, 0f);
+        statusRect.anchoredPosition = new Vector2(0, 100);
+        statusRect.sizeDelta = new Vector2(800, 60);
+        var statusTmp = statusObj.AddComponent<TMPro.TextMeshProUGUI>();
+        statusTmp.alignment = TMPro.TextAlignmentOptions.Center;
+        statusTmp.fontSize = 18;
+        statusTmp.color = Color.white;
+        ui.statusLogText = statusTmp;
+
+        // Instruction / Close Button
+        GameObject closeObj = new GameObject("CloseButton");
+        closeObj.transform.SetParent(panel.transform, false);
+        var closeRect = closeObj.AddComponent<RectTransform>();
+        closeRect.anchorMin = new Vector2(0.5f, 0f);
+        closeRect.anchorMax = new Vector2(0.5f, 0f);
+        closeRect.anchoredPosition = new Vector2(0, 45);
+        closeRect.sizeDelta = new Vector2(240, 45);
+        var closeImg = closeObj.AddComponent<UnityEngine.UI.Image>();
+        closeImg.color = new Color(0.2f, 0.2f, 0.25f, 0.85f);
+        var closeBtn = closeObj.AddComponent<UnityEngine.UI.Button>();
+        closeBtn.onClick.AddListener(CloseInspection);
+
+        GameObject closeTextObj = new GameObject("Text");
+        closeTextObj.transform.SetParent(closeObj.transform, false);
+        var ctRect = closeTextObj.AddComponent<RectTransform>();
+        ctRect.anchorMin = Vector2.zero;
+        ctRect.anchorMax = Vector2.one;
+        ctRect.offsetMin = Vector2.zero;
+        ctRect.offsetMax = Vector2.zero;
+        var closeTmp = closeTextObj.AddComponent<TMPro.TextMeshProUGUI>();
+        closeTmp.text = "[ESC] Kembali";
+        closeTmp.alignment = TMPro.TextAlignmentOptions.Center;
+        closeTmp.fontSize = 18;
+        closeTmp.color = Color.white;
+        ui.closeButton = closeBtn;
+
+        return ui;
     }
 
     private void SetupInspectionModel(InteractableObject clue)
@@ -103,7 +288,14 @@ public class ClueInspector : MonoBehaviour
         spawnedInspectionModel.transform.localPosition = Vector3.zero;
         spawnedInspectionModel.transform.localRotation = Quaternion.identity;
 
-        // Nonaktifkan skrip interaksi atau collider fisik pada model studio agar tidak bentrok
+        // Nonaktifkan physics gravity dan collider fisik pada model studio agar tidak jatuh/bentrok
+        var rigidbodies = spawnedInspectionModel.GetComponentsInChildren<Rigidbody>();
+        foreach (var rb in rigidbodies)
+        {
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
+
         var colliders = spawnedInspectionModel.GetComponentsInChildren<Collider>();
         foreach (var col in colliders)
         {
@@ -247,6 +439,12 @@ public class ClueInspector : MonoBehaviour
         if (inspectionCamera != null) inspectionCamera.gameObject.SetActive(false);
         if (threePointLightingSetup != null) threePointLightingSetup.SetActive(false);
         if (inspectionUI != null) inspectionUI.Hide();
+
+        if (cachedMainCamera != null)
+        {
+            cachedMainCamera.gameObject.SetActive(true);
+            cachedMainCamera = null;
+        }
 
         // Kembalikan ke state Exploration (W1-11)
         if (GameStateManager.Instance != null)
