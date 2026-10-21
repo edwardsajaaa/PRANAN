@@ -31,8 +31,8 @@ Material:
     - _SlopeSmoothness: 0.12
     - _SlopeThreshold: 0.55
     m_Colors:
-    - _GrassColor: {r: 0.72, g: 0.79, b: 0.38, a: 1}
-    - _GrassHighColor: {r: 0.82, g: 0.86, b: 0.45, a: 1}
-    - _RockColor: {r: 0.86, g: 0.84, b: 0.72, a: 1}
-    - _SoilColor: {r: 0.76, g: 0.7, b: 0.54, a: 1}
+    - _GrassColor: {r: 0.16, g: 0.35, b: 0.14, a: 1}
+    - _GrassHighColor: {r: 0.22, g: 0.44, b: 0.18, a: 1}
+    - _RockColor: {r: 0.38, g: 0.4, b: 0.32, a: 1}
+    - _SoilColor: {r: 0.22, g: 0.28, b: 0.16, a: 1}
   m_BuildTextureStacks: []

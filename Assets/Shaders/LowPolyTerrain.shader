@@ -2,10 +2,10 @@ Shader "Custom/LowPolyTerrain"
 {
     Properties
     {
-        _GrassColor ("Grass Low Color", Color) = (0.72, 0.79, 0.38, 1.0)
-        _GrassHighColor ("Grass High Color", Color) = (0.82, 0.86, 0.45, 1.0)
-        _RockColor ("Rock / Slope Color", Color) = (0.86, 0.84, 0.72, 1.0)
-        _SoilColor ("Soil / Basin Color", Color) = (0.76, 0.70, 0.54, 1.0)
+        _GrassColor ("Grass Low Color", Color) = (0.16, 0.35, 0.14, 1.0)
+        _GrassHighColor ("Grass High Color", Color) = (0.22, 0.44, 0.18, 1.0)
+        _RockColor ("Rock / Slope Color", Color) = (0.38, 0.40, 0.32, 1.0)
+        _SoilColor ("Soil / Basin Color", Color) = (0.22, 0.28, 0.16, 1.0)
         _SlopeThreshold ("Slope Threshold", Range(0.0, 1.0)) = 0.55
         _SlopeSmoothness ("Slope Blend", Range(0.01, 0.5)) = 0.12
         _HeightMin ("Height Min", Float) = 0.0
