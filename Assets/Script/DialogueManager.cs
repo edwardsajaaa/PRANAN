@@ -70,23 +70,91 @@ public class DialogueManager : MonoBehaviour
 
     private void EnsureMandorNPCExists()
     {
+        Vector3 playerPos = new Vector3(923.21f, 135.72f, 86f);
+        Vector3 forward = Vector3.forward;
+        Vector3 right = Vector3.right;
+
+        PlayerMovement player = FindObjectOfType<PlayerMovement>();
+        if (player != null)
+        {
+            playerPos = player.transform.position;
+            Vector3 camFwd = Camera.main != null ? Camera.main.transform.forward : player.transform.forward;
+            camFwd.y = 0;
+            if (camFwd.sqrMagnitude > 0.01f) forward = camFwd.normalized;
+
+            Vector3 camRight = Camera.main != null ? Camera.main.transform.right : player.transform.right;
+            camRight.y = 0;
+            if (camRight.sqrMagnitude > 0.01f) right = camRight.normalized;
+        }
+
         if (FindObjectOfType<NPCMandor>() == null)
         {
+            Vector3 npcPos = playerPos + forward * 5.5f + right * 2.2f;
+            RaycastHit hit;
+            if (Physics.Raycast(npcPos + Vector3.up * 10f, Vector3.down, out hit, 40f))
+            {
+                npcPos.y = hit.point.y + 0.95f;
+            }
+
             GameObject npc = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             npc.name = "NPC_PakHendra";
-            npc.transform.position = new Vector3(4f, 1f, 8f);
-            npc.transform.localScale = new Vector3(1f, 1.8f, 1f);
+            npc.transform.position = npcPos;
+            npc.transform.localScale = new Vector3(0.9f, 1.8f, 0.9f);
 
             Renderer rend = npc.GetComponent<Renderer>();
             if (rend != null)
             {
-                rend.material.color = new Color(0.85f, 0.45f, 0.15f);
+                Material redMat = new Material(Shader.Find("Standard"));
+                redMat.color = new Color(0.95f, 0.15f, 0.1f);
+                rend.material = redMat;
             }
 
             NPCMandor mandorComp = npc.AddComponent<NPCMandor>();
             mandorComp.clueName = "Pak Hendra (Mandor Lapangan)";
-            mandorComp.clueDescription = "Mandor lapangan penanggung jawab operasional di lokasi penebangan.";
+            mandorComp.clueDescription = "Mandor lapangan penanggung jawab operasional di lokasi penebangan liar.";
             mandorComp.surfaceProximityTolerance = 3.5f;
+        }
+
+        InteractableObject[] allClues = FindObjectsOfType<InteractableObject>();
+        bool hasPermit = false;
+        foreach (var c in allClues)
+        {
+            if (c.evidenceType == ClueEvidenceType.PermitDocument)
+            {
+                hasPermit = true;
+                break;
+            }
+        }
+
+        if (!hasPermit)
+        {
+            Vector3 docPos = playerPos + forward * 3.5f - right * 1.8f;
+            RaycastHit hit;
+            if (Physics.Raycast(docPos + Vector3.up * 10f, Vector3.down, out hit, 40f))
+            {
+                docPos.y = hit.point.y + 0.15f;
+            }
+
+            GameObject doc = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            doc.name = "Bukti_DokumenKonsesiPalsu";
+            doc.transform.position = docPos;
+            doc.transform.localScale = new Vector3(0.5f, 0.1f, 0.7f);
+
+            Renderer docRend = doc.GetComponent<Renderer>();
+            if (docRend != null)
+            {
+                Material yellowMat = new Material(Shader.Find("Standard"));
+                yellowMat.color = new Color(1.0f, 0.85f, 0.3f);
+                docRend.material = yellowMat;
+            }
+
+            InteractableObject docComp = doc.AddComponent<InteractableObject>();
+            docComp.clueName = "Dokumen Izin Konsesi Palsu";
+            docComp.clueDescription = "Berkas izin konsesi dengan stempel kadaluarsa dan tanda tangan palsu.";
+            docComp.category = ClueCategory.Artificial;
+            docComp.evidenceType = ClueEvidenceType.PermitDocument;
+            docComp.isCollectable = true;
+            docComp.collectedMessage = "Dokumen izin palsu berhasil diamankan ke dalam jurnal.";
         }
     }
 
