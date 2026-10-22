@@ -15,9 +15,10 @@ public class AnomalyHotspot : MonoBehaviour
     [Tooltip("Waktu observasi minimal (0.5 detik sesuai kriteria W1-10)")]
     public float requiredDwellTime = 0.5f;
 
-    [Range(0f, 1f)]
-    [Tooltip("Batas hadap kamera (Dot Product). Hotspot harus menghadap kamera.")]
     public float facingAngleDotThreshold = 0.3f;
+
+    [Header("STADI 2025 Evidence Link")]
+    public ClueEvidenceType evidenceType = ClueEvidenceType.General;
 
     [Header("State")]
     public bool isDiscovered = false;

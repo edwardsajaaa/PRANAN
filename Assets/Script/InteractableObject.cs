@@ -31,6 +31,9 @@ public class InteractableObject : MonoBehaviour
     public string collectedMessage = "Bukti berhasil diamankan.";
     public System.Action<InteractableObject> OnCollected;
 
+    [Header("STADI 2025 Evidence Classification")]
+    public ClueEvidenceType evidenceType = ClueEvidenceType.General;
+
     [Header("Interaction Settings")]
     [Tooltip("Titik fokus targeting (jika null, menggunakan posisi transform)")]
     public Transform targetPivot;
@@ -87,9 +90,26 @@ public class InteractableObject : MonoBehaviour
         }
     }
 
+    public ClueEvidenceType GetEffectiveEvidenceType()
+    {
+        if (evidenceType != ClueEvidenceType.General) return evidenceType;
+        string lower = (clueName + " " + clueDescription).ToLower();
+        if (lower.Contains("dokumen") || lower.Contains("izin") || lower.Contains("surat") || lower.Contains("legal"))
+            return ClueEvidenceType.PermitDocument;
+        if (lower.Contains("tunggul") || lower.Contains("alat") || lower.Contains("mesin") || lower.Contains("kotak") || lower.Contains("gergaji"))
+            return ClueEvidenceType.ManMadeEquipment;
+        if (lower.Contains("pohon") || lower.Contains("gambut") || lower.Contains("alami") || lower.Contains("lapuk"))
+            return ClueEvidenceType.NaturalEvidence;
+        return ClueEvidenceType.General;
+    }
+
     public virtual void Collect()
     {
         OnCollected?.Invoke(this);
+        if (JournalManager.Instance != null)
+        {
+            JournalManager.Instance.RecordEvidence(clueName, category.ToString(), collectedMessage, GetEffectiveEvidenceType(), true);
+        }
         Debug.Log($"[InteractableObject] {clueName} berhasil diambil: {collectedMessage}");
         gameObject.SetActive(false);
     }

@@ -5,7 +5,10 @@ public enum GameState
 {
     Exploration,
     Inspection,
-    Journal
+    Journal,
+    Dialogue,
+    Ending,
+    Menu
 }
 
 public class GameStateManager : MonoBehaviour
@@ -47,6 +50,8 @@ public class GameStateManager : MonoBehaviour
     private void Start()
     {
         SetState(GameState.Exploration);
+        if (JournalManager.Instance != null) { }
+        if (DialogueManager.Instance != null) { }
     }
 
     public void SetState(GameState newState)
@@ -62,12 +67,10 @@ public class GameStateManager : MonoBehaviour
                 break;
 
             case GameState.Inspection:
-                Time.timeScale = 0f;
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-                break;
-
             case GameState.Journal:
+            case GameState.Dialogue:
+            case GameState.Ending:
+            case GameState.Menu:
                 Time.timeScale = 0f;
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;

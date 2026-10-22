@@ -550,6 +550,21 @@ public class ClueInspector : MonoBehaviour
         {
             inspectionUI.OnHotspotIdentified(hotspot);
         }
+
+        if (JournalManager.Instance != null && activeClue != null)
+        {
+            ClueEvidenceType effectiveType = hotspot.evidenceType != ClueEvidenceType.General
+                ? hotspot.evidenceType
+                : activeClue.GetEffectiveEvidenceType();
+
+            JournalManager.Instance.RecordEvidence(
+                activeClue.clueName,
+                activeClue.category.ToString(),
+                $"{hotspot.anomalyTitle}: {hotspot.anomalyObservationLog}",
+                effectiveType,
+                false
+            );
+        }
     }
 
     public void TryCollectActiveClue()
@@ -564,6 +579,16 @@ public class ClueInspector : MonoBehaviour
 
     public void SaveAndClose()
     {
+        if (JournalManager.Instance != null && activeClue != null)
+        {
+            JournalManager.Instance.RecordEvidence(
+                activeClue.clueName,
+                activeClue.category.ToString(),
+                activeClue.clueDescription,
+                activeClue.GetEffectiveEvidenceType(),
+                false
+            );
+        }
         CloseInspection();
     }
 
