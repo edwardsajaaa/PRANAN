@@ -1,10 +1,11 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
 [RequireComponent(typeof(CanvasGroup))]
-public class PrologueController : MonoBehaviour
+public class PrologueController : MonoBehaviour, IPointerClickHandler
 {
     private static PrologueController instance;
     public static PrologueController Instance => instance;
@@ -37,8 +38,8 @@ public class PrologueController : MonoBehaviour
     public bool autoGenerateLayout = false;
 
     [Header("3. Timing & Animasi")]
-    public float fadeInDuration = 1.0f;
-    public float fadeOutDuration = 0.8f;
+    public float fadeInDuration = 0.5f;
+    public float fadeOutDuration = 0.6f;
     public bool autoStartOnPlay = true;
 
     [Header("4. Referensi UI (CUKUP DRAG 1 OBJEK TEXT TMP ANDA KE SINI)")]
@@ -69,8 +70,19 @@ public class PrologueController : MonoBehaviour
         if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
 
+        // Pastikan EventSystem tersedia di scene agar interaksi klik UI berfungsi
+        if (FindObjectOfType<EventSystem>() == null)
+        {
+            GameObject es = new GameObject("EventSystem");
+            es.AddComponent<EventSystem>();
+            es.AddComponent<StandaloneInputModule>();
+        }
+
         // Auto-find references dari child jika belum di-assign di inspector
         AutoDetectChildReferences();
+
+        // Pastikan panel background bisa diklik
+        SetupClickablePanel();
 
         if (autoGenerateLayout)
         {
@@ -98,15 +110,59 @@ public class PrologueController : MonoBehaviour
 
     private void Update()
     {
-        if (isDismissed || isTransitioning) return;
+        if (isDismissed) return;
+
+        // Pastikan kursor mouse selalu terlihat & tidak terkunci selama prolog tampil
+        if (!Cursor.visible || Cursor.lockState != CursorLockMode.None)
+        {
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+        }
+
+        // Jika user klik saat masih fade-in, langsung skip fade-in ke teks penuh
+        if (isTransitioning)
+        {
+            if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
+            {
+                StopAllCoroutines();
+                canvasGroup.alpha = 1f;
+                isTransitioning = false;
+            }
+            return;
+        }
 
         // Input untuk maju ke halaman berikutnya atau memulai game (klik 4x)
-        if (Input.GetKeyDown(KeyCode.Space) || 
+        if (Input.GetMouseButtonDown(0) || 
+            Input.GetMouseButtonDown(1) || 
+            Input.GetKeyDown(KeyCode.Space) || 
             Input.GetKeyDown(KeyCode.Return) || 
-            Input.GetKeyDown(KeyCode.KeypadEnter) || 
-            Input.GetMouseButtonDown(0))
+            Input.GetKeyDown(KeyCode.KeypadEnter) ||
+            Input.GetKeyDown(KeyCode.E))
         {
             AdvanceToNextPage();
+        }
+    }
+
+    // Mendeteksi klik langsung pada Canvas / UI Panel
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        AdvanceToNextPage();
+    }
+
+    private void SetupClickablePanel()
+    {
+        Image panelImage = GetComponentInChildren<Image>(true);
+        if (panelImage != null)
+        {
+            panelImage.raycastTarget = true;
+            Button btn = panelImage.GetComponent<Button>();
+            if (btn == null)
+            {
+                btn = panelImage.gameObject.AddComponent<Button>();
+                btn.transition = Selectable.Transition.None;
+            }
+            btn.onClick.RemoveListener(AdvanceToNextPage);
+            btn.onClick.AddListener(AdvanceToNextPage);
         }
     }
 
@@ -150,11 +206,11 @@ public class PrologueController : MonoBehaviour
             GameStateManager.Instance.SetState(GameState.Menu);
         }
 
-        // Tampilkan kursor bersih
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
+        // Tampilkan kursor bersih dan bebas digerakkan
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
 
-        // Fade in
+        // Fade in cepat
         float elapsed = 0f;
         while (elapsed < fadeInDuration)
         {
@@ -186,10 +242,15 @@ public class PrologueController : MonoBehaviour
         isDismissed = true;
         isTransitioning = false;
 
-        // Alihkan state ke Eksplorasi aktif
+        // Alihkan state ke Eksplorasi aktif & kunci kursor untuk gameplay first-person
         if (GameStateManager.Instance != null)
         {
             GameStateManager.Instance.SetState(GameState.Exploration);
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
 
         // Nonaktifkan canvas agar menghemat draw call
