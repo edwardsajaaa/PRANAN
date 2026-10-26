@@ -28,12 +28,19 @@ public class PrologueController : MonoBehaviour
     public string continuePrompt = "[ Tekan SPASI atau KLIK untuk Mulai ]";
     public float promptBlinkSpeed = 2.5f;
 
+    [Header("Layout & Customization Mode")]
+    [Tooltip("Jika true, script akan otomatis menata ulang posisi RectTransform. Set false jika Anda ingin menata posisi & ukuran UI secara manual di Unity.")]
+    public bool autoGenerateLayout = false;
+
+    [Tooltip("Jika true, script akan menimpa isi text component dengan teks dari inspector ini. Set false jika Anda sudah mengetik teks langsung di komponen TextMeshPro.")]
+    public bool overrideTextContent = false;
+
     [Header("Timing & Animation")]
     public float fadeInDuration = 1.0f;
     public float fadeOutDuration = 0.8f;
     public bool autoStartOnPlay = true;
 
-    [Header("UI Element References (Auto-Created If Null)")]
+    [Header("UI Element References (Bisa di-drag manual di Inspector)")]
     public CanvasGroup canvasGroup;
     public TextMeshProUGUI titleTextComponent;
     public TextMeshProUGUI bodyTextComponent;
@@ -57,7 +64,17 @@ public class PrologueController : MonoBehaviour
         if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
 
-        SetupUIHierarchyIfMissing();
+        // Auto-find references dari child jika belum di-assign di inspector
+        AutoDetectChildReferences();
+
+        if (autoGenerateLayout)
+        {
+            SetupUIHierarchyIfMissing();
+        }
+        else if (overrideTextContent)
+        {
+            ApplyTextContents();
+        }
     }
 
     private void Start()
@@ -154,6 +171,50 @@ public class PrologueController : MonoBehaviour
 
         // Nonaktifkan canvas agar menghemat draw call
         gameObject.SetActive(false);
+    }
+
+    private void AutoDetectChildReferences()
+    {
+        TextMeshProUGUI[] tmps = GetComponentsInChildren<TextMeshProUGUI>(true);
+        foreach (var t in tmps)
+        {
+            string lowerName = t.name.ToLower();
+            if (lowerName.Contains("title") && titleTextComponent == null)
+                titleTextComponent = t;
+            else if ((lowerName.Contains("body") || lowerName.Contains("content") || lowerName.Contains("text")) && bodyTextComponent == null && t != titleTextComponent)
+                bodyTextComponent = t;
+            else if ((lowerName.Contains("author") || lowerName.Contains("sign")) && authorTextComponent == null)
+                authorTextComponent = t;
+            else if (lowerName.Contains("prompt") && promptTextComponent == null)
+                promptTextComponent = t;
+        }
+
+        if (avatarImageComponent == null)
+        {
+            Image[] images = GetComponentsInChildren<Image>(true);
+            foreach (var img in images)
+            {
+                if (img.name.ToLower().Contains("avatar") || img.name.ToLower().Contains("icon"))
+                {
+                    avatarImageComponent = img;
+                    break;
+                }
+            }
+        }
+    }
+
+    private void ApplyTextContents()
+    {
+        if (titleTextComponent != null && !string.IsNullOrEmpty(prologueTitle))
+            titleTextComponent.text = prologueTitle;
+        if (bodyTextComponent != null && !string.IsNullOrEmpty(prologueBody))
+            bodyTextComponent.text = prologueBody;
+        if (authorTextComponent != null && !string.IsNullOrEmpty(authorSignature))
+            authorTextComponent.text = authorSignature;
+        if (promptTextComponent != null && !string.IsNullOrEmpty(continuePrompt))
+            promptTextComponent.text = continuePrompt;
+        if (avatarImageComponent != null && avatarSprite != null)
+            avatarImageComponent.sprite = avatarSprite;
     }
 
     public void SetupUIHierarchyIfMissing()
