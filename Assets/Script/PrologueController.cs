@@ -9,10 +9,10 @@ public class PrologueController : MonoBehaviour
     private static PrologueController instance;
     public static PrologueController Instance => instance;
 
-    [Header("Prologue Header & Content")]
+    [Header("1. Isi Teks Prolog (Semua Diatur dalam 1 Script Ini)")]
     public string prologueTitle = "ABOUT THE GAME";
     
-    [TextArea(8, 18)]
+    [TextArea(8, 20)]
     public string prologueBody = 
         "Terima kasih telah memainkan PRANAN.\n\n" +
         "Game ini dirancang sebagai pengalaman investigasi forensik lingkungan interaktif yang mengangkat isu deforestasi dan pembalakan liar di kawasan gambut, berlandaskan data faktual Status Deforestasi Indonesia (STADI) 2025.\n\n" +
@@ -20,34 +20,33 @@ public class PrologueController : MonoBehaviour
         "Gunakan ketelitian observasi Anda untuk mengungkap fakta sebenarnya di balik kerusakan hutan ini.\n\n" +
         "Selamat bertugas dan selamat bermain!";
 
-    [Header("Author Signature")]
     public string authorSignature = "EDWARD BENEDICT";
-    public Sprite avatarSprite;
-
-    [Header("Prompt Settings")]
     public string continuePrompt = "[ Tekan SPASI atau KLIK untuk Mulai ]";
     public float promptBlinkSpeed = 2.5f;
 
-    [Header("Layout & Customization Mode")]
-    [Tooltip("Jika true, script akan otomatis menata ulang posisi RectTransform. Set false jika Anda ingin menata posisi & ukuran UI secara manual di Unity.")]
+    [Header("2. Mode Kustomisasi UI")]
+    [Tooltip("Jika true, script akan otomatis mengisi teks di atas ke dalam komponen Text TMP Anda saat game dimulai.")]
+    public bool overrideTextContent = true;
+
+    [Tooltip("Jika true, script akan mengatur posisi RectTransform secara otomatis. Set FALSE jika Anda menata posisi UI sendiri.")]
     public bool autoGenerateLayout = false;
 
-    [Tooltip("Jika true, script akan menimpa isi text component dengan teks dari inspector ini. Set false jika Anda sudah mengetik teks langsung di komponen TextMeshPro.")]
-    public bool overrideTextContent = false;
-
-    [Header("Timing & Animation")]
+    [Header("3. Timing & Animasi")]
     public float fadeInDuration = 1.0f;
     public float fadeOutDuration = 0.8f;
     public bool autoStartOnPlay = true;
 
-    [Header("UI Element References (Bisa di-drag manual di Inspector)")]
+    [Header("4. Referensi UI (CUKUP DRAG 1 OBJEK TEXT TMP ANDA KE SINI)")]
+    [Tooltip("Tarik objek Text (TMP) Anda ke sini. Judul, isi cerita, dan tanda tangan akan langsung digabung secara rapi di 1 teks ini.")]
+    public TextMeshProUGUI singlePrologueText;
     public CanvasGroup canvasGroup;
-    public TextMeshProUGUI titleTextComponent;
-    public TextMeshProUGUI bodyTextComponent;
-    public TextMeshProUGUI authorTextComponent;
-    public Image avatarImageComponent;
-    public TextMeshProUGUI promptTextComponent;
     public TMP_FontAsset preferredFont;
+
+    [Header("5. Opsional (Hanya jika Anda memisahkan judul/prompt di objek berbeda)")]
+    public TextMeshProUGUI separateTitleText;
+    public TextMeshProUGUI separatePromptText;
+    public Image avatarImage;
+    public Sprite avatarSprite;
 
     private bool isTransitioning = false;
     private bool isDismissed = false;
@@ -89,13 +88,13 @@ public class PrologueController : MonoBehaviour
     {
         if (isDismissed || isTransitioning) return;
 
-        // Efek kedip halus pada teks prompt bawah
-        if (promptTextComponent != null)
+        // Efek kedip halus pada teks prompt bawah jika terpisah
+        if (separatePromptText != null)
         {
             float alpha = Mathf.PingPong(Time.unscaledTime * promptBlinkSpeed, 1f);
-            Color c = promptTextComponent.color;
+            Color c = separatePromptText.color;
             c.a = Mathf.Lerp(0.25f, 1f, alpha);
-            promptTextComponent.color = c;
+            separatePromptText.color = c;
         }
 
         // Input untuk melanjutkan
@@ -175,28 +174,23 @@ public class PrologueController : MonoBehaviour
 
     private void AutoDetectChildReferences()
     {
-        TextMeshProUGUI[] tmps = GetComponentsInChildren<TextMeshProUGUI>(true);
-        foreach (var t in tmps)
+        if (singlePrologueText == null)
         {
-            string lowerName = t.name.ToLower();
-            if (lowerName.Contains("title") && titleTextComponent == null)
-                titleTextComponent = t;
-            else if ((lowerName.Contains("body") || lowerName.Contains("content") || lowerName.Contains("text")) && bodyTextComponent == null && t != titleTextComponent)
-                bodyTextComponent = t;
-            else if ((lowerName.Contains("author") || lowerName.Contains("sign")) && authorTextComponent == null)
-                authorTextComponent = t;
-            else if (lowerName.Contains("prompt") && promptTextComponent == null)
-                promptTextComponent = t;
+            TextMeshProUGUI[] tmps = GetComponentsInChildren<TextMeshProUGUI>(true);
+            if (tmps != null && tmps.Length > 0)
+            {
+                singlePrologueText = tmps[0];
+            }
         }
 
-        if (avatarImageComponent == null)
+        if (avatarImage == null)
         {
             Image[] images = GetComponentsInChildren<Image>(true);
             foreach (var img in images)
             {
-                if (img.name.ToLower().Contains("avatar") || img.name.ToLower().Contains("icon"))
+                if (img.gameObject != gameObject && !img.name.ToLower().Contains("panel"))
                 {
-                    avatarImageComponent = img;
+                    avatarImage = img;
                     break;
                 }
             }
@@ -205,16 +199,40 @@ public class PrologueController : MonoBehaviour
 
     private void ApplyTextContents()
     {
-        if (titleTextComponent != null && !string.IsNullOrEmpty(prologueTitle))
-            titleTextComponent.text = prologueTitle;
-        if (bodyTextComponent != null && !string.IsNullOrEmpty(prologueBody))
-            bodyTextComponent.text = prologueBody;
-        if (authorTextComponent != null && !string.IsNullOrEmpty(authorSignature))
-            authorTextComponent.text = authorSignature;
-        if (promptTextComponent != null && !string.IsNullOrEmpty(continuePrompt))
-            promptTextComponent.text = continuePrompt;
-        if (avatarImageComponent != null && avatarSprite != null)
-            avatarImageComponent.sprite = avatarSprite;
+        // 1. Jika pengguna memakai 1 TextMeshPro untuk semuanya:
+        if (singlePrologueText != null)
+        {
+            if (preferredFont != null) singlePrologueText.font = preferredFont;
+
+            string titleFormatted = $"<b><size=125%>{prologueTitle}</size></b>\n\n";
+            string bodyFormatted = $"{prologueBody}\n\n";
+            string authorFormatted = string.IsNullOrEmpty(authorSignature) ? "" : $"<align=right>{authorSignature}</align>\n\n";
+            string promptFormatted = (separatePromptText == null && !string.IsNullOrEmpty(continuePrompt)) 
+                ? $"<align=center><size=75%><color=#999999>{continuePrompt}</color></size></align>" 
+                : "";
+
+            singlePrologueText.text = titleFormatted + bodyFormatted + authorFormatted + promptFormatted;
+        }
+
+        // 2. Jika ada teks terpisah untuk judul
+        if (separateTitleText != null && !string.IsNullOrEmpty(prologueTitle))
+        {
+            separateTitleText.text = prologueTitle;
+            if (preferredFont != null) separateTitleText.font = preferredFont;
+        }
+
+        // 3. Jika ada teks terpisah untuk prompt
+        if (separatePromptText != null && !string.IsNullOrEmpty(continuePrompt))
+        {
+            separatePromptText.text = continuePrompt;
+            if (preferredFont != null) separatePromptText.font = preferredFont;
+        }
+
+        // 4. Avatar gambar jika ada
+        if (avatarImage != null && avatarSprite != null)
+        {
+            avatarImage.sprite = avatarSprite;
+        }
     }
 
     public void SetupUIHierarchyIfMissing()
@@ -286,171 +304,41 @@ public class PrologueController : MonoBehaviour
         containerRect.offsetMin = Vector2.zero;
         containerRect.offsetMax = Vector2.zero;
 
-        // 1. Title Text (ABOUT THE GAME)
-        if (titleTextComponent == null)
+        // Single Unified Prologue Text (Judul + Isi + Signature dalam 1 TextMeshPro)
+        if (singlePrologueText == null)
         {
-            Transform existingTitle = containerObj.transform.Find("TitleText");
-            if (existingTitle != null) titleTextComponent = existingTitle.GetComponent<TextMeshProUGUI>();
-        }
-        if (titleTextComponent == null)
-        {
-            GameObject titleObj = new GameObject("TitleText", typeof(RectTransform), typeof(TextMeshProUGUI));
-            titleObj.transform.SetParent(containerObj.transform, false);
-            titleTextComponent = titleObj.GetComponent<TextMeshProUGUI>();
+            Transform existingText = panelObj.transform.Find("Text (TMP)");
+            if (existingText != null) singlePrologueText = existingText.GetComponent<TextMeshProUGUI>();
         }
 
-        RectTransform titleRect = titleTextComponent.GetComponent<RectTransform>();
-        titleRect.anchorMin = new Vector2(0f, 1f);
-        titleRect.anchorMax = new Vector2(1f, 1f);
-        titleRect.pivot = new Vector2(0f, 1f);
-        titleRect.anchoredPosition = new Vector2(0, 0);
-        titleRect.sizeDelta = new Vector2(0, 50);
-
-        titleTextComponent.text = prologueTitle;
-        titleTextComponent.fontSize = 28;
-        titleTextComponent.fontStyle = FontStyles.Bold;
-        titleTextComponent.color = new Color(0.9f, 0.9f, 0.9f, 1f);
-        titleTextComponent.characterSpacing = 2.5f;
-        titleTextComponent.alignment = TextAlignmentOptions.TopLeft;
-        if (preferredFont != null) titleTextComponent.font = preferredFont;
-
-        // 2. Body Text
-        if (bodyTextComponent == null)
+        if (singlePrologueText == null)
         {
-            Transform existingBody = containerObj.transform.Find("BodyText");
-            if (existingBody != null) bodyTextComponent = existingBody.GetComponent<TextMeshProUGUI>();
-        }
-        if (bodyTextComponent == null)
-        {
-            // Cek apakah ada Text (TMP) yang dibuat user sebelumnya
-            TextMeshProUGUI userTmp = panelObj.GetComponentInChildren<TextMeshProUGUI>();
-            if (userTmp != null && userTmp != titleTextComponent)
-            {
-                bodyTextComponent = userTmp;
-                bodyTextComponent.transform.SetParent(containerObj.transform, false);
-            }
-            else
-            {
-                GameObject bodyObj = new GameObject("BodyText", typeof(RectTransform), typeof(TextMeshProUGUI));
-                bodyObj.transform.SetParent(containerObj.transform, false);
-                bodyTextComponent = bodyObj.GetComponent<TextMeshProUGUI>();
-            }
+            Transform existingBody = containerObj.transform.Find("PrologueText");
+            if (existingBody != null) singlePrologueText = existingBody.GetComponent<TextMeshProUGUI>();
         }
 
-        RectTransform bodyRect = bodyTextComponent.GetComponent<RectTransform>();
-        bodyRect.anchorMin = new Vector2(0f, 0.15f);
-        bodyRect.anchorMax = new Vector2(1f, 0.90f);
-        bodyRect.pivot = new Vector2(0f, 1f);
-        bodyRect.offsetMin = Vector2.zero;
-        bodyRect.offsetMax = Vector2.zero;
-
-        bodyTextComponent.text = prologueBody;
-        bodyTextComponent.fontSize = 21;
-        bodyTextComponent.lineSpacing = 28f;
-        bodyTextComponent.paragraphSpacing = 20f;
-        bodyTextComponent.color = new Color(0.82f, 0.82f, 0.82f, 1f);
-        bodyTextComponent.alignment = TextAlignmentOptions.TopLeft;
-        bodyTextComponent.enableWordWrapping = true;
-        if (preferredFont != null) bodyTextComponent.font = preferredFont;
-
-        // 3. Signature & Avatar Section (Bottom Right)
-        Transform sigGroupT = containerObj.transform.Find("SignatureGroup");
-        GameObject sigGroupObj;
-        if (sigGroupT != null)
+        if (singlePrologueText == null)
         {
-            sigGroupObj = sigGroupT.gameObject;
-        }
-        else
-        {
-            sigGroupObj = new GameObject("SignatureGroup", typeof(RectTransform), typeof(HorizontalLayoutGroup));
-            sigGroupObj.transform.SetParent(containerObj.transform, false);
+            GameObject textObj = new GameObject("PrologueText", typeof(RectTransform), typeof(TextMeshProUGUI));
+            textObj.transform.SetParent(containerObj.transform, false);
+            singlePrologueText = textObj.GetComponent<TextMeshProUGUI>();
         }
 
-        RectTransform sigRect = sigGroupObj.GetComponent<RectTransform>();
-        sigRect.anchorMin = new Vector2(1f, 0f);
-        sigRect.anchorMax = new Vector2(1f, 0f);
-        sigRect.pivot = new Vector2(1f, 0f);
-        sigRect.anchoredPosition = new Vector2(0, 50);
-        sigRect.sizeDelta = new Vector2(300, 48);
+        RectTransform textRect = singlePrologueText.GetComponent<RectTransform>();
+        textRect.anchorMin = new Vector2(0f, 0f);
+        textRect.anchorMax = new Vector2(1f, 1f);
+        textRect.pivot = new Vector2(0f, 1f);
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
 
-        HorizontalLayoutGroup hlg = sigGroupObj.GetComponent<HorizontalLayoutGroup>();
-        hlg.childAlignment = TextAnchor.MiddleRight;
-        hlg.spacing = 14;
-        hlg.childControlWidth = false;
-        hlg.childControlHeight = false;
+        singlePrologueText.fontSize = 22;
+        singlePrologueText.lineSpacing = 26f;
+        singlePrologueText.paragraphSpacing = 22f;
+        singlePrologueText.color = new Color(0.85f, 0.85f, 0.85f, 1f);
+        singlePrologueText.alignment = TextAlignmentOptions.TopLeft;
+        singlePrologueText.enableWordWrapping = true;
+        if (preferredFont != null) singlePrologueText.font = preferredFont;
 
-        // Avatar Image
-        if (avatarImageComponent == null)
-        {
-            Transform existingAvatar = sigGroupObj.transform.Find("Avatar");
-            if (existingAvatar != null) avatarImageComponent = existingAvatar.GetComponent<Image>();
-        }
-        if (avatarImageComponent == null)
-        {
-            GameObject avatarObj = new GameObject("Avatar", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            avatarObj.transform.SetParent(sigGroupObj.transform, false);
-            avatarImageComponent = avatarObj.GetComponent<Image>();
-        }
-        RectTransform avRect = avatarImageComponent.GetComponent<RectTransform>();
-        avRect.sizeDelta = new Vector2(40, 40);
-
-        if (avatarSprite != null)
-        {
-            avatarImageComponent.sprite = avatarSprite;
-            avatarImageComponent.color = Color.white;
-        }
-        else
-        {
-            // Warna aksen badge jika avatar belum dipasang
-            avatarImageComponent.color = new Color(0.2f, 0.6f, 0.9f, 0.8f);
-        }
-
-        // Author Name Text
-        if (authorTextComponent == null)
-        {
-            Transform existingAuthor = sigGroupObj.transform.Find("AuthorName");
-            if (existingAuthor != null) authorTextComponent = existingAuthor.GetComponent<TextMeshProUGUI>();
-        }
-        if (authorTextComponent == null)
-        {
-            GameObject authorObj = new GameObject("AuthorName", typeof(RectTransform), typeof(TextMeshProUGUI));
-            authorObj.transform.SetParent(sigGroupObj.transform, false);
-            authorTextComponent = authorObj.GetComponent<TextMeshProUGUI>();
-        }
-        RectTransform authorRect = authorTextComponent.GetComponent<RectTransform>();
-        authorRect.sizeDelta = new Vector2(180, 40);
-
-        authorTextComponent.text = authorSignature;
-        authorTextComponent.fontSize = 20;
-        authorTextComponent.fontStyle = FontStyles.Bold;
-        authorTextComponent.color = Color.white;
-        authorTextComponent.alignment = TextAlignmentOptions.MidlineLeft;
-        if (preferredFont != null) authorTextComponent.font = preferredFont;
-
-        // 4. Prompt Text (Bottom Center)
-        if (promptTextComponent == null)
-        {
-            Transform existingPrompt = containerObj.transform.Find("PromptText");
-            if (existingPrompt != null) promptTextComponent = existingPrompt.GetComponent<TextMeshProUGUI>();
-        }
-        if (promptTextComponent == null)
-        {
-            GameObject promptObj = new GameObject("PromptText", typeof(RectTransform), typeof(TextMeshProUGUI));
-            promptObj.transform.SetParent(containerObj.transform, false);
-            promptTextComponent = promptObj.GetComponent<TextMeshProUGUI>();
-        }
-
-        RectTransform promptRect = promptTextComponent.GetComponent<RectTransform>();
-        promptRect.anchorMin = new Vector2(0f, 0f);
-        promptRect.anchorMax = new Vector2(0.6f, 0f);
-        promptRect.pivot = new Vector2(0f, 0f);
-        promptRect.anchoredPosition = new Vector2(0, 50);
-        promptRect.sizeDelta = new Vector2(450, 40);
-
-        promptTextComponent.text = continuePrompt;
-        promptTextComponent.fontSize = 17;
-        promptTextComponent.color = new Color(0.7f, 0.7f, 0.7f, 0.8f);
-        promptTextComponent.alignment = TextAlignmentOptions.MidlineLeft;
-        if (preferredFont != null) promptTextComponent.font = preferredFont;
+        ApplyTextContents();
     }
 }
