@@ -10,25 +10,30 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
     private static PrologueController instance;
     public static PrologueController Instance => instance;
 
-    [Header("1. Halaman Teks Prolog (Klik 4x untuk Berganti Halaman)")]
-    public string prologueTitle = "ABOUT THE GAME";
+    [Header("1. Halaman Teks Prolog (Klik Bertahap Berganti Halaman)")]
+    public string prologueTitle = "Prolog Cerita :";
     
-    [Tooltip("Daftar 4 halaman teks prolog. Pemain akan mengklik 4x untuk membaca urutan halaman ini sampai selesai.")]
+    [Tooltip("Daftar halaman teks prolog cerita. Pemain akan mengklik mouse untuk membaca urutan halaman ini sampai selesai.")]
     [TextArea(4, 12)]
     public string[] prologuePages = new string[4]
     {
-        "Terima kasih telah memainkan PRANAN.\n\nGame ini dirancang sebagai pengalaman investigasi forensik lingkungan interaktif yang mengangkat isu deforestasi dan pembalakan liar di kawasan gambut, berlandaskan data faktual Status Deforestasi Indonesia (STADI) 2025.",
+        // Narasi Pertama (Tampilan Awal)
+        "Hutan hujan tak pernah benar-benar sunyi.\n\nAda jutaan bisikan kehidupan di balik lebatnya tajuk kanopi yang menahan terik dunia.",
 
-        "Anda bertindak sebagai penyidik independen yang diterjunkan ke area konsesi terpencil setelah muncul laporan kejanggalan aktivitas penebangan tanpa izin.",
+        // Narasi Kedua (Klik Mouse Kedua)
+        "Namun di puncak kemarau panjang tahun ini, keheningan asing merayap ke jantung Hutan Lindung Rano Towa.\n\nRatusan hektare pepohonan hilang tanpa jejak dalam hitungan minggu.",
 
-        "Tugas Anda adalah menelusuri kejanggalan fisik medan, mengidentifikasi perbedaan pola penebangan mekanik vs pelapukan alami, mengamankan dokumen izin fiktif ke dalam jurnal, dan mengonfrontasi mandor penanggung jawab lapangan.",
+        // Narasi Ketiga (Klik Mouse Ketiga)
+        "Laporan satelit mendeteksi anomali tebangan liar di luar batas konsesi resmi. Jejak alat berat dan tunggul kayu bernomor fiktif tersembunyi di balik rawa gambut yang rapuh.",
 
-        "Gunakan ketelitian observasi Anda untuk mengungkap fakta sebenarnya di balik kerusakan hutan ini.\n\nSelamat bertugas dan selamat bermain!"
+        // Narasi Keempat (Klik Mouse Keempat - Terakhir)
+        "Anda dikirim untuk mengumpulkan bukti materiil tak terbantahkan dan mengonfrontasi pihak pengelola sebelum kejahatan ini ditutup sepihak.\n\nKebenaran ada di antara pepohonan yang tersisa."
     };
 
-    public string authorSignature = "EDWARD BENEDICT";
-    public string continuePrompt = "[ Klik atau Tekan SPASI untuk Lanjut ]";
-    public string finalPrompt = "[ Klik atau Tekan SPASI untuk Mulai Bermain ]";
+    [Tooltip("Kosongkan jika tidak ingin menampilkan nama author pada cerita")]
+    public string authorSignature = "";
+    public string continuePrompt = "";
+    public string finalPrompt = "";
 
     [Header("2. Mode Kustomisasi UI")]
     [Tooltip("Jika true, script akan otomatis mengisi teks di atas ke dalam komponen Text TMP Anda saat game dimulai.")]
@@ -295,16 +300,16 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
         {
             if (preferredFont != null) singlePrologueText.font = preferredFont;
 
-            string titleFormatted = string.IsNullOrEmpty(prologueTitle) ? "" : $"<b><size=125%>{prologueTitle}</size></b>\n\n";
-            string bodyFormatted = $"{currentBody}\n\n";
+            string titleFormatted = string.IsNullOrEmpty(prologueTitle) ? "" : $"{prologueTitle}\n\n";
+            string bodyFormatted = $"{currentBody}";
             
-            // Tanda tangan author muncul di halaman terakhir (klik ke-4)
+            // Tanda tangan author (jika diisi)
             string authorFormatted = (isLastPage && !string.IsNullOrEmpty(authorSignature))
-                ? $"<align=right>{authorSignature}</align>\n\n"
+                ? $"\n\n\n<align=right>{authorSignature}</align>"
                 : "";
 
             string promptFormatted = (separatePromptText == null && !string.IsNullOrEmpty(activePrompt)) 
-                ? $"<align=center><size=75%><color=#999999>{activePrompt}</color></size></align>" 
+                ? $"\n\n\n<align=center><size=75%><color=#999999>{activePrompt}</color></size></align>" 
                 : "";
 
             singlePrologueText.text = titleFormatted + bodyFormatted + authorFormatted + promptFormatted;
