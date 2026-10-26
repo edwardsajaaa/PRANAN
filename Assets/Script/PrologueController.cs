@@ -22,7 +22,6 @@ public class PrologueController : MonoBehaviour
 
     public string authorSignature = "EDWARD BENEDICT";
     public string continuePrompt = "[ Tekan SPASI atau KLIK untuk Mulai ]";
-    public float promptBlinkSpeed = 2.5f;
 
     [Header("2. Mode Kustomisasi UI")]
     [Tooltip("Jika true, script akan otomatis mengisi teks di atas ke dalam komponen Text TMP Anda saat game dimulai.")]
@@ -87,15 +86,6 @@ public class PrologueController : MonoBehaviour
     private void Update()
     {
         if (isDismissed || isTransitioning) return;
-
-        // Efek kedip halus pada teks prompt bawah jika terpisah
-        if (separatePromptText != null)
-        {
-            float alpha = Mathf.PingPong(Time.unscaledTime * promptBlinkSpeed, 1f);
-            Color c = separatePromptText.color;
-            c.a = Mathf.Lerp(0.25f, 1f, alpha);
-            separatePromptText.color = c;
-        }
 
         // Input untuk melanjutkan
         if (Input.GetKeyDown(KeyCode.Space) || 
