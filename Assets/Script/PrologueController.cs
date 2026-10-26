@@ -9,19 +9,25 @@ public class PrologueController : MonoBehaviour
     private static PrologueController instance;
     public static PrologueController Instance => instance;
 
-    [Header("1. Isi Teks Prolog (Semua Diatur dalam 1 Script Ini)")]
+    [Header("1. Halaman Teks Prolog (Klik 4x untuk Berganti Halaman)")]
     public string prologueTitle = "ABOUT THE GAME";
     
-    [TextArea(8, 20)]
-    public string prologueBody = 
-        "Terima kasih telah memainkan PRANAN.\n\n" +
-        "Game ini dirancang sebagai pengalaman investigasi forensik lingkungan interaktif yang mengangkat isu deforestasi dan pembalakan liar di kawasan gambut, berlandaskan data faktual Status Deforestasi Indonesia (STADI) 2025.\n\n" +
-        "Anda bertindak sebagai penyidik independen yang diterjunkan ke area konsesi terpencil. Tugas Anda adalah menelusuri kejanggalan fisik medan, mengidentifikasi perbedaan pola penebangan mekanik vs pelapukan alami, mengamankan dokumen izin fiktif ke dalam jurnal, dan mengonfrontasi penanggung jawab lapangan.\n\n" +
-        "Gunakan ketelitian observasi Anda untuk mengungkap fakta sebenarnya di balik kerusakan hutan ini.\n\n" +
-        "Selamat bertugas dan selamat bermain!";
+    [Tooltip("Daftar 4 halaman teks prolog. Pemain akan mengklik 4x untuk membaca urutan halaman ini sampai selesai.")]
+    [TextArea(4, 12)]
+    public string[] prologuePages = new string[4]
+    {
+        "Terima kasih telah memainkan PRANAN.\n\nGame ini dirancang sebagai pengalaman investigasi forensik lingkungan interaktif yang mengangkat isu deforestasi dan pembalakan liar di kawasan gambut, berlandaskan data faktual Status Deforestasi Indonesia (STADI) 2025.",
+
+        "Anda bertindak sebagai penyidik independen yang diterjunkan ke area konsesi terpencil setelah muncul laporan kejanggalan aktivitas penebangan tanpa izin.",
+
+        "Tugas Anda adalah menelusuri kejanggalan fisik medan, mengidentifikasi perbedaan pola penebangan mekanik vs pelapukan alami, mengamankan dokumen izin fiktif ke dalam jurnal, dan mengonfrontasi mandor penanggung jawab lapangan.",
+
+        "Gunakan ketelitian observasi Anda untuk mengungkap fakta sebenarnya di balik kerusakan hutan ini.\n\nSelamat bertugas dan selamat bermain!"
+    };
 
     public string authorSignature = "EDWARD BENEDICT";
-    public string continuePrompt = "[ Tekan SPASI atau KLIK untuk Mulai ]";
+    public string continuePrompt = "[ Klik atau Tekan SPASI untuk Lanjut ]";
+    public string finalPrompt = "[ Klik atau Tekan SPASI untuk Mulai Bermain ]";
 
     [Header("2. Mode Kustomisasi UI")]
     [Tooltip("Jika true, script akan otomatis mengisi teks di atas ke dalam komponen Text TMP Anda saat game dimulai.")]
@@ -47,6 +53,7 @@ public class PrologueController : MonoBehaviour
     public Image avatarImage;
     public Sprite avatarSprite;
 
+    private int currentPageIndex = 0;
     private bool isTransitioning = false;
     private bool isDismissed = false;
 
@@ -71,12 +78,18 @@ public class PrologueController : MonoBehaviour
         }
         else if (overrideTextContent)
         {
-            ApplyTextContents();
+            ApplyCurrentPageText();
         }
     }
 
     private void Start()
     {
+        currentPageIndex = 0;
+        if (overrideTextContent)
+        {
+            ApplyCurrentPageText();
+        }
+
         if (autoStartOnPlay && !isDismissed)
         {
             StartCoroutine(PlayPrologueSequence());
@@ -87,12 +100,33 @@ public class PrologueController : MonoBehaviour
     {
         if (isDismissed || isTransitioning) return;
 
-        // Input untuk melanjutkan
+        // Input untuk maju ke halaman berikutnya atau memulai game (klik 4x)
         if (Input.GetKeyDown(KeyCode.Space) || 
             Input.GetKeyDown(KeyCode.Return) || 
             Input.GetKeyDown(KeyCode.KeypadEnter) || 
             Input.GetMouseButtonDown(0))
         {
+            AdvanceToNextPage();
+        }
+    }
+
+    public void AdvanceToNextPage()
+    {
+        if (isDismissed || isTransitioning) return;
+
+        currentPageIndex++;
+
+        // Jika masih ada halaman berikutnya dalam daftar 4 halaman:
+        if (prologuePages != null && currentPageIndex < prologuePages.Length)
+        {
+            if (overrideTextContent)
+            {
+                ApplyCurrentPageText();
+            }
+        }
+        else
+        {
+            // Sudah mencapai klik ke-4 (halaman terakhir selesai) -> Fade out dan mulai game!
             DismissPrologue();
         }
     }
@@ -187,18 +221,29 @@ public class PrologueController : MonoBehaviour
         }
     }
 
-    private void ApplyTextContents()
+    private void ApplyCurrentPageText()
     {
+        if (prologuePages == null || prologuePages.Length == 0) return;
+
+        string currentBody = (currentPageIndex < prologuePages.Length) ? prologuePages[currentPageIndex] : "";
+        bool isLastPage = (currentPageIndex >= prologuePages.Length - 1);
+        string activePrompt = isLastPage ? finalPrompt : continuePrompt;
+
         // 1. Jika pengguna memakai 1 TextMeshPro untuk semuanya:
         if (singlePrologueText != null)
         {
             if (preferredFont != null) singlePrologueText.font = preferredFont;
 
-            string titleFormatted = $"<b><size=125%>{prologueTitle}</size></b>\n\n";
-            string bodyFormatted = $"{prologueBody}\n\n";
-            string authorFormatted = string.IsNullOrEmpty(authorSignature) ? "" : $"<align=right>{authorSignature}</align>\n\n";
-            string promptFormatted = (separatePromptText == null && !string.IsNullOrEmpty(continuePrompt)) 
-                ? $"<align=center><size=75%><color=#999999>{continuePrompt}</color></size></align>" 
+            string titleFormatted = string.IsNullOrEmpty(prologueTitle) ? "" : $"<b><size=125%>{prologueTitle}</size></b>\n\n";
+            string bodyFormatted = $"{currentBody}\n\n";
+            
+            // Tanda tangan author muncul di halaman terakhir (klik ke-4)
+            string authorFormatted = (isLastPage && !string.IsNullOrEmpty(authorSignature))
+                ? $"<align=right>{authorSignature}</align>\n\n"
+                : "";
+
+            string promptFormatted = (separatePromptText == null && !string.IsNullOrEmpty(activePrompt)) 
+                ? $"<align=center><size=75%><color=#999999>{activePrompt}</color></size></align>" 
                 : "";
 
             singlePrologueText.text = titleFormatted + bodyFormatted + authorFormatted + promptFormatted;
@@ -212,15 +257,16 @@ public class PrologueController : MonoBehaviour
         }
 
         // 3. Jika ada teks terpisah untuk prompt
-        if (separatePromptText != null && !string.IsNullOrEmpty(continuePrompt))
+        if (separatePromptText != null && !string.IsNullOrEmpty(activePrompt))
         {
-            separatePromptText.text = continuePrompt;
+            separatePromptText.text = activePrompt;
             if (preferredFont != null) separatePromptText.font = preferredFont;
         }
 
         // 4. Avatar gambar jika ada
         if (avatarImage != null && avatarSprite != null)
         {
+            avatarImage.gameObject.SetActive(isLastPage);
             avatarImage.sprite = avatarSprite;
         }
     }
@@ -329,6 +375,6 @@ public class PrologueController : MonoBehaviour
         singlePrologueText.enableWordWrapping = true;
         if (preferredFont != null) singlePrologueText.font = preferredFont;
 
-        ApplyTextContents();
+        ApplyCurrentPageText();
     }
 }
