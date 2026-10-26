@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -29,6 +30,10 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
         // Narasi Keempat (Klik Mouse Keempat - Terakhir)
         "Anda dikirim untuk mengumpulkan bukti materiil tak terbantahkan dan mengonfrontasi pihak pengelola sebelum kejahatan ini ditutup sepihak.\n\nKebenaran ada di antara pepohonan yang tersisa."
     };
+
+    [Header("Opsi Mode Objek Terpisah (Jika Anda membuat objek Narasi, Narasi (1), dst)")]
+    [Tooltip("Jika Anda membuat objek terpisah di Hierarchy (seperti Narasi, Narasi (1), dst), script otomatis mendeteksinya atau Anda bisa drag ke sini. Script akan menyalakan/mematikan objek satu per satu setiap klik!")]
+    public GameObject[] narrativeObjects;
 
     [Tooltip("Kosongkan jika tidak ingin menampilkan nama author pada cerita")]
     public string authorSignature = "";
@@ -158,10 +163,14 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
         lastAdvanceTime = Time.unscaledTime;
 
         currentPageIndex++;
-        Debug.Log($"[Prologue] Maju ke Halaman Indeks: {currentPageIndex + 1}");
 
-        // Jika masih ada halaman berikutnya dalam daftar:
-        if (prologuePages != null && currentPageIndex < prologuePages.Length)
+        int totalPages = (narrativeObjects != null && narrativeObjects.Length > 0) 
+            ? narrativeObjects.Length 
+            : (prologuePages != null ? prologuePages.Length : 1);
+
+        Debug.Log($"[Prologue] Maju ke Halaman: {currentPageIndex + 1}/{totalPages}");
+
+        if (currentPageIndex < totalPages)
         {
             ApplyCurrentPageText();
         }
@@ -244,12 +253,55 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
 
     private void AutoDetectChildReferences()
     {
+        // 1. Deteksi apakah user membuat objek terpisah Narasi, Narasi (1), Narasi (2), dll di Hierarchy
+        if (narrativeObjects == null || narrativeObjects.Length == 0)
+        {
+            Transform panel = transform.Find("Black Panel");
+            Transform searchRoot = panel != null ? panel : transform;
+            List<GameObject> narasiList = new List<GameObject>();
+
+            for (int i = 0; i < searchRoot.childCount; i++)
+            {
+                Transform child = searchRoot.GetChild(i);
+                string lower = child.name.ToLower();
+                if (lower.StartsWith("narasi"))
+                {
+                    narasiList.Add(child.gameObject);
+                }
+            }
+
+            if (narasiList.Count > 1)
+            {
+                narrativeObjects = narasiList.ToArray();
+                Debug.Log($"[Prologue] Otomatis mendeteksi {narrativeObjects.Length} objek narasi terpisah di Hierarchy!");
+            }
+        }
+
+        // 2. Deteksi singlePrologueText (utamakan objek yang bernama 'narasi' atau 'text', bukan judul 'prolog')
         if (singlePrologueText == null)
         {
             TextMeshProUGUI[] tmps = GetComponentsInChildren<TextMeshProUGUI>(true);
-            if (tmps != null && tmps.Length > 0)
+            foreach (var t in tmps)
             {
-                singlePrologueText = tmps[0];
+                string lower = t.name.ToLower();
+                if (lower.Contains("narasi") || lower.Contains("body") || lower.Contains("content"))
+                {
+                    singlePrologueText = t;
+                    break;
+                }
+            }
+
+            if (singlePrologueText == null && tmps != null && tmps.Length > 0)
+            {
+                foreach (var t in tmps)
+                {
+                    if (!t.name.ToLower().Contains("title") && !t.name.ToLower().Contains("prolog"))
+                    {
+                        singlePrologueText = t;
+                        break;
+                    }
+                }
+                if (singlePrologueText == null) singlePrologueText = tmps[0];
             }
         }
 
@@ -269,6 +321,22 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
 
     private void ApplyCurrentPageText()
     {
+        // MODE A: Jika pengguna membuat objek terpisah di Hierarchy (Narasi, Narasi (1), dst)
+        if (narrativeObjects != null && narrativeObjects.Length > 0)
+        {
+            currentPageIndex = Mathf.Clamp(currentPageIndex, 0, narrativeObjects.Length - 1);
+            for (int i = 0; i < narrativeObjects.Length; i++)
+            {
+                if (narrativeObjects[i] != null)
+                {
+                    narrativeObjects[i].SetActive(i == currentPageIndex);
+                }
+            }
+            Debug.Log($"[Prologue] Mode Objek Terpisah: Menampilkan '{narrativeObjects[currentPageIndex]?.name}' (Aktif). Objek lainnya dimatikan.");
+            return;
+        }
+
+        // MODE B: Jika pengguna memakai 1 TextMeshPro (Script mengubah isi teksnya)
         if (prologuePages == null || prologuePages.Length == 0)
         {
             prologuePages = new string[4]
@@ -282,7 +350,7 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
 
         if (singlePrologueText == null)
         {
-            singlePrologueText = GetComponentInChildren<TextMeshProUGUI>(true);
+            AutoDetectChildReferences();
         }
 
         currentPageIndex = Mathf.Clamp(currentPageIndex, 0, prologuePages.Length - 1);
@@ -290,7 +358,6 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
         bool isLastPage = (currentPageIndex >= prologuePages.Length - 1);
         string activePrompt = isLastPage ? finalPrompt : continuePrompt;
 
-        // 1. Jika pengguna memakai 1 TextMeshPro untuk semuanya:
         if (singlePrologueText != null)
         {
             if (preferredFont != null) singlePrologueText.font = preferredFont;
@@ -298,7 +365,6 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             string titleFormatted = string.IsNullOrEmpty(prologueTitle) ? "" : $"{prologueTitle}\n\n";
             string bodyFormatted = $"{currentBody}";
             
-            // Tanda tangan author (jika diisi)
             string authorFormatted = (isLastPage && !string.IsNullOrEmpty(authorSignature))
                 ? $"\n\n\n<align=right>{authorSignature}</align>"
                 : "";
@@ -308,7 +374,7 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
                 : "";
 
             singlePrologueText.text = titleFormatted + bodyFormatted + authorFormatted + promptFormatted;
-            Debug.Log($"[Prologue] Text diperbarui ke Halaman {currentPageIndex + 1}/{prologuePages.Length}: {singlePrologueText.text.Substring(0, Mathf.Min(35, singlePrologueText.text.Length))}...");
+            Debug.Log($"[Prologue] Mode 1 Text: Mengubah isi teks pada '{singlePrologueText.name}' ke Halaman {currentPageIndex + 1}/{prologuePages.Length}");
         }
 
         // 2. Jika ada teks terpisah untuk judul
