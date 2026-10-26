@@ -60,6 +60,8 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
     public Sprite avatarSprite;
 
     private int currentPageIndex = 0;
+    private float lastAdvanceTime = -1f;
+    public float inputCooldown = 0.35f;
     private bool isTransitioning = false;
     private bool isDismissed = false;
 
@@ -75,7 +77,7 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
         if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
 
-        // Pastikan EventSystem tersedia di scene agar interaksi klik UI berfungsi
+        // Pastikan EventSystem tersedia di scene
         if (FindObjectOfType<EventSystem>() == null)
         {
             GameObject es = new GameObject("EventSystem");
@@ -83,29 +85,21 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             es.AddComponent<StandaloneInputModule>();
         }
 
-        // Auto-find references dari child jika belum di-assign di inspector
+        // Auto-find references dari child
         AutoDetectChildReferences();
-
-        // Pastikan panel background bisa diklik
-        SetupClickablePanel();
 
         if (autoGenerateLayout)
         {
             SetupUIHierarchyIfMissing();
         }
-        else if (overrideTextContent)
-        {
-            ApplyCurrentPageText();
-        }
+
+        ApplyCurrentPageText();
     }
 
     private void Start()
     {
         currentPageIndex = 0;
-        if (overrideTextContent)
-        {
-            ApplyCurrentPageText();
-        }
+        ApplyCurrentPageText();
 
         if (autoStartOnPlay && !isDismissed)
         {
@@ -132,11 +126,12 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
                 StopAllCoroutines();
                 canvasGroup.alpha = 1f;
                 isTransitioning = false;
+                lastAdvanceTime = Time.unscaledTime;
             }
             return;
         }
 
-        // Input untuk maju ke halaman berikutnya atau memulai game (klik 4x)
+        // Input untuk maju ke halaman berikutnya (Klik Kiri, Klik Kanan, Spasi, Enter)
         if (Input.GetMouseButtonDown(0) || 
             Input.GetMouseButtonDown(1) || 
             Input.GetKeyDown(KeyCode.Space) || 
@@ -148,46 +143,31 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
         }
     }
 
-    // Mendeteksi klik langsung pada Canvas / UI Panel
+    // Mendeteksi klik langsung pada Canvas / UI Panel via EventSystem
     public void OnPointerClick(PointerEventData eventData)
     {
         AdvanceToNextPage();
-    }
-
-    private void SetupClickablePanel()
-    {
-        Image panelImage = GetComponentInChildren<Image>(true);
-        if (panelImage != null)
-        {
-            panelImage.raycastTarget = true;
-            Button btn = panelImage.GetComponent<Button>();
-            if (btn == null)
-            {
-                btn = panelImage.gameObject.AddComponent<Button>();
-                btn.transition = Selectable.Transition.None;
-            }
-            btn.onClick.RemoveListener(AdvanceToNextPage);
-            btn.onClick.AddListener(AdvanceToNextPage);
-        }
     }
 
     public void AdvanceToNextPage()
     {
         if (isDismissed || isTransitioning) return;
 
-        currentPageIndex++;
+        // Cegah eksekusi berulang kali dalam 1 klik (Debounce cooldown)
+        if (Time.unscaledTime - lastAdvanceTime < inputCooldown) return;
+        lastAdvanceTime = Time.unscaledTime;
 
-        // Jika masih ada halaman berikutnya dalam daftar 4 halaman:
+        currentPageIndex++;
+        Debug.Log($"[Prologue] Maju ke Halaman Indeks: {currentPageIndex + 1}");
+
+        // Jika masih ada halaman berikutnya dalam daftar:
         if (prologuePages != null && currentPageIndex < prologuePages.Length)
         {
-            if (overrideTextContent)
-            {
-                ApplyCurrentPageText();
-            }
+            ApplyCurrentPageText();
         }
         else
         {
-            // Sudah mencapai klik ke-4 (halaman terakhir selesai) -> Fade out dan mulai game!
+            Debug.Log("[Prologue] Halaman terakhir selesai. Menutup prolog dan memulai game!");
             DismissPrologue();
         }
     }
@@ -289,9 +269,24 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
 
     private void ApplyCurrentPageText()
     {
-        if (prologuePages == null || prologuePages.Length == 0) return;
+        if (prologuePages == null || prologuePages.Length == 0)
+        {
+            prologuePages = new string[4]
+            {
+                "Hutan hujan tak pernah benar-benar sunyi.\n\nAda jutaan bisikan kehidupan di balik lebatnya tajuk kanopi yang menahan terik dunia.",
+                "Namun di puncak kemarau panjang tahun ini, keheningan asing merayap ke jantung Hutan Lindung Rano Towa.\n\nRatusan hektare pepohonan hilang tanpa jejak dalam hitungan minggu.",
+                "Laporan satelit mendeteksi anomali tebangan liar di luar batas konsesi resmi. Jejak alat berat dan tunggul kayu bernomor fiktif tersembunyi di balik rawa gambut yang rapuh.",
+                "Anda dikirim untuk mengumpulkan bukti materiil tak terbantahkan dan mengonfrontasi pihak pengelola sebelum kejahatan ini ditutup sepihak.\n\nKebenaran ada di antara pepohonan yang tersisa."
+            };
+        }
 
-        string currentBody = (currentPageIndex < prologuePages.Length) ? prologuePages[currentPageIndex] : "";
+        if (singlePrologueText == null)
+        {
+            singlePrologueText = GetComponentInChildren<TextMeshProUGUI>(true);
+        }
+
+        currentPageIndex = Mathf.Clamp(currentPageIndex, 0, prologuePages.Length - 1);
+        string currentBody = prologuePages[currentPageIndex];
         bool isLastPage = (currentPageIndex >= prologuePages.Length - 1);
         string activePrompt = isLastPage ? finalPrompt : continuePrompt;
 
@@ -313,6 +308,7 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
                 : "";
 
             singlePrologueText.text = titleFormatted + bodyFormatted + authorFormatted + promptFormatted;
+            Debug.Log($"[Prologue] Text diperbarui ke Halaman {currentPageIndex + 1}/{prologuePages.Length}: {singlePrologueText.text.Substring(0, Mathf.Min(35, singlePrologueText.text.Length))}...");
         }
 
         // 2. Jika ada teks terpisah untuk judul
