@@ -73,12 +73,32 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
     public Image avatarImage;
     public Sprite avatarSprite;
 
+    [Header("6. Efek Ketik (Typewriter Transition)")]
+    [Tooltip("Aktifkan animasi efek ketik (Typewriter) saat kata-kata prolog muncul.")]
+    public bool useTypewriterEffect = true;
+
+    [Tooltip("Kecepatan ketik (detik per karakter). Contoh: 0.035 = ~28 karakter per detik.")]
+    public float typingSpeed = 0.035f;
+
+    [Tooltip("Audio klip suara ketik opsional (misal suara 'tik' tuts mesin ketik). Kosongkan jika tidak perlu suara.")]
+    public AudioClip typingSound;
+
+    [Tooltip("AudioSource untuk memutar suara ketik. Jika kosong, script otomatis mencarinya.")]
+    public AudioSource audioSource;
+
     private int currentPageIndex = 0;
     private float lastAdvanceTime = -1f;
     public float inputCooldown = 0.35f;
     private bool isTransitioning = false;
     private bool isWaitingInitialDelay = false;
     private bool isDismissed = false;
+
+    // State untuk Typewriter
+    private Coroutine typewriterCoroutine = null;
+    private bool isTyping = false;
+    private TextMeshProUGUI activeTypingTmp = null;
+    private Text activeTypingLegacyText = null;
+    private string activeOriginalLegacyText = "";
 
     private void Awake()
     {
@@ -91,6 +111,16 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
 
         if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
+
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null && typingSound != null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+            }
+        }
 
         if (FindObjectOfType<EventSystem>() == null)
         {
@@ -130,7 +160,7 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             Cursor.lockState = CursorLockMode.None;
         }
 
-        // Jika sedang dalam jeda layar hitam polos (sebelum judul & narasi muncul)
+        // 1. Jika sedang dalam jeda layar hitam polos (sebelum judul & narasi muncul)
         if (isWaitingInitialDelay)
         {
             if (allowSkipDelayWithClick && (
@@ -142,6 +172,21 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
                 Input.GetKeyDown(KeyCode.E)))
             {
                 SkipInitialDelay();
+            }
+            return;
+        }
+
+        // 2. Jika efek ketik sedang berjalan dan pemain mengklik / tekan tombol: langsung selesaikan ketikan kalimat
+        if (isTyping)
+        {
+            if (Input.GetMouseButtonDown(0) || 
+                Input.GetMouseButtonDown(1) || 
+                Input.GetKeyDown(KeyCode.Space) || 
+                Input.GetKeyDown(KeyCode.Return) || 
+                Input.GetKeyDown(KeyCode.KeypadEnter) ||
+                Input.GetKeyDown(KeyCode.E))
+            {
+                CompleteTypewriter();
             }
             return;
         }
@@ -158,6 +203,7 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             return;
         }
 
+        // 3. Input untuk maju ke halaman berikutnya
         if (Input.GetMouseButtonDown(0) || 
             Input.GetMouseButtonDown(1) || 
             Input.GetKeyDown(KeyCode.Space) || 
@@ -176,6 +222,11 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             if (allowSkipDelayWithClick) SkipInitialDelay();
             return;
         }
+        if (isTyping)
+        {
+            CompleteTypewriter();
+            return;
+        }
         AdvanceToNextPage();
     }
 
@@ -188,6 +239,8 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
 
     private void HideAllPrologueContent()
     {
+        StopTypewriter();
+
         if (titleObject != null)
         {
             titleObject.SetActive(false);
@@ -230,6 +283,12 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
     {
         if (isDismissed || isTransitioning || isWaitingInitialDelay) return;
 
+        if (isTyping)
+        {
+            CompleteTypewriter();
+            return;
+        }
+
         if (Time.unscaledTime - lastAdvanceTime < inputCooldown) return;
         lastAdvanceTime = Time.unscaledTime;
 
@@ -255,8 +314,149 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
     public void DismissPrologue()
     {
         if (isDismissed || isTransitioning) return;
+        StopTypewriter();
         StartCoroutine(FadeOutAndBeginGame());
     }
+
+    #region Typewriter Methods
+    public void StartTypewriter(GameObject targetObj)
+    {
+        if (targetObj == null) return;
+        StopTypewriter();
+        if (!useTypewriterEffect) return;
+
+        TextMeshProUGUI tmp = targetObj.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (tmp != null)
+        {
+            typewriterCoroutine = StartCoroutine(TypewriterTMPRoutine(tmp));
+            return;
+        }
+
+        Text legacy = targetObj.GetComponentInChildren<Text>(true);
+        if (legacy != null)
+        {
+            typewriterCoroutine = StartCoroutine(TypewriterLegacyRoutine(legacy));
+        }
+    }
+
+    public void StartTypewriter(TextMeshProUGUI tmp)
+    {
+        if (tmp == null) return;
+        StopTypewriter();
+        if (!useTypewriterEffect) return;
+        typewriterCoroutine = StartCoroutine(TypewriterTMPRoutine(tmp));
+    }
+
+    private IEnumerator TypewriterTMPRoutine(TextMeshProUGUI tmp)
+    {
+        isTyping = true;
+        activeTypingTmp = tmp;
+
+        tmp.ForceMeshUpdate();
+        int totalChars = tmp.textInfo.characterCount;
+        if (totalChars == 0 && !string.IsNullOrEmpty(tmp.text))
+        {
+            yield return null;
+            tmp.ForceMeshUpdate();
+            totalChars = tmp.textInfo.characterCount;
+        }
+
+        tmp.maxVisibleCharacters = 0;
+
+        for (int i = 1; i <= totalChars; i++)
+        {
+            tmp.maxVisibleCharacters = i;
+
+            if (typingSound != null && audioSource != null && (i % 2 == 0))
+            {
+                audioSource.PlayOneShot(typingSound, 0.4f);
+            }
+
+            yield return new WaitForSecondsRealtime(typingSpeed);
+        }
+
+        tmp.maxVisibleCharacters = 99999;
+        isTyping = false;
+        activeTypingTmp = null;
+        typewriterCoroutine = null;
+    }
+
+    private IEnumerator TypewriterLegacyRoutine(Text legacy)
+    {
+        isTyping = true;
+        activeTypingLegacyText = legacy;
+        activeOriginalLegacyText = legacy.text;
+
+        int totalChars = activeOriginalLegacyText.Length;
+        legacy.text = "";
+
+        for (int i = 1; i <= totalChars; i++)
+        {
+            legacy.text = activeOriginalLegacyText.Substring(0, i);
+
+            if (typingSound != null && audioSource != null && (i % 2 == 0))
+            {
+                audioSource.PlayOneShot(typingSound, 0.4f);
+            }
+
+            yield return new WaitForSecondsRealtime(typingSpeed);
+        }
+
+        legacy.text = activeOriginalLegacyText;
+        isTyping = false;
+        activeTypingLegacyText = null;
+        typewriterCoroutine = null;
+    }
+
+    public void CompleteTypewriter()
+    {
+        if (!isTyping) return;
+
+        if (typewriterCoroutine != null)
+        {
+            StopCoroutine(typewriterCoroutine);
+            typewriterCoroutine = null;
+        }
+
+        if (activeTypingTmp != null)
+        {
+            activeTypingTmp.maxVisibleCharacters = 99999;
+            activeTypingTmp = null;
+        }
+
+        if (activeTypingLegacyText != null)
+        {
+            activeTypingLegacyText.text = activeOriginalLegacyText;
+            activeTypingLegacyText = null;
+        }
+
+        isTyping = false;
+        lastAdvanceTime = Time.unscaledTime;
+    }
+
+    public void StopTypewriter()
+    {
+        if (typewriterCoroutine != null)
+        {
+            StopCoroutine(typewriterCoroutine);
+            typewriterCoroutine = null;
+        }
+
+        if (activeTypingTmp != null)
+        {
+            activeTypingTmp.maxVisibleCharacters = 99999;
+            activeTypingTmp = null;
+        }
+
+        if (activeTypingLegacyText != null)
+        {
+            activeTypingLegacyText.text = activeOriginalLegacyText;
+            activeTypingLegacyText = null;
+        }
+
+        isTyping = false;
+    }
+    #endregion
 
     private IEnumerator PlayPrologueSequence()
     {
@@ -435,10 +635,16 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             {
                 if (narrativeObjects[i] != null)
                 {
-                    narrativeObjects[i].SetActive(i == currentPageIndex);
+                    bool isActive = (i == currentPageIndex);
+                    narrativeObjects[i].SetActive(isActive);
                 }
             }
             Debug.Log($"[Prologue] Mode Objek Terpisah: Menampilkan '{narrativeObjects[currentPageIndex]?.name}' (Aktif). Objek lainnya dimatikan.");
+
+            if (useTypewriterEffect && narrativeObjects[currentPageIndex] != null)
+            {
+                StartTypewriter(narrativeObjects[currentPageIndex]);
+            }
             return;
         }
 
@@ -480,6 +686,11 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
 
             singlePrologueText.text = titleFormatted + bodyFormatted + authorFormatted + promptFormatted;
             Debug.Log($"[Prologue] Mode 1 Text: Mengubah isi teks pada '{singlePrologueText.name}' ke Halaman {currentPageIndex + 1}/{prologuePages.Length}");
+
+            if (useTypewriterEffect)
+            {
+                StartTypewriter(singlePrologueText);
+            }
         }
 
         if (separateTitleText != null && !string.IsNullOrEmpty(prologueTitle))
