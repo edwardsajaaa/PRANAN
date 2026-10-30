@@ -114,11 +114,19 @@ dotnet build Assembly-CSharp.csproj
 
 ## Catatan Perubahan (Changelog)
 
+### Versi 1.3.1 - Pembaruan Polish Alur & Kontrol Narasi Prolog
+- **Mekanik Tahan Klik untuk Akselerasi Ketik (Hold to Accelerate)**:
+  - Pemain dapat menahan klik kiri mouse atau tombol Spasi untuk mempercepat animasi kemunculan kata (~5x lebih cepat).
+  - Menghilangkan instan-skip saat klik biasa agar ritme dan atmosfer cerita pembuka tetap terjaga.
+- **Stabilisasi Tata Letak Vertikal (Top-Aligned Typewriter)**:
+  - Mengunci perataan teks vertikal ke bagian atas (*Top Alignment*) untuk mengeliminasi pergeseran teks ke atas saat baris baru muncul.
+- **Pembersihan Arsitektur & Debounce Frame**:
+  - Penambahan proteksi frame ganda (*same-frame input guard*) untuk memastikan transisi antarhalaman narasi berlangsung mulus tanpa loncatan ganda.
+
 ### Versi 1.3.0 - Pembaruan Sistem Prolog Sinematik dan Efek Transisi
 - **Efek Ketik Transisional (Typewriter Transition)**:
   - Implementasi animasi ketik karakter per karakter menggunakan properti `maxVisibleCharacters` pada TextMeshPro.
-  - Penambahan mekanisme interupsi (*click-to-complete*): Mengklik saat teks sedang diketik akan langsung menampilkan seluruh kalimat secara instan.
-  - Parameter konfigurasi `typingSpeed` (kecepatan ketik detik per karakter) dan dukungan `typingSound` opsional dengan pemutaran audio terjadwal.
+  - Parameter konfigurasi `typingSpeed` (kecepatan ketik detik per karakter) dan dukungan `typingSound` opsional.
 - **Jeda Awal Layar Hitam (Initial Black Screen Delay)**:
   - Penambahan parameter `initialBlackDelay` pada `PrologueController`. Saat scene dimuat, panel hitam polos tampil terlebih dahulu sebelum teks judul dan narasi diaktifkan.
   - Penambahan opsi `allowSkipDelayWithClick` yang memungkinkan pemain melewati jeda awal dengan klik mouse.
