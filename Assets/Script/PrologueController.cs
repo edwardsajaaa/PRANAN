@@ -23,6 +23,7 @@ public class PrologueController : MonoBehaviour
 
     [Header("Typewriter & Audio")]
     [SerializeField] private bool useTypewriterEffect = true;
+    [SerializeField] private bool lockTextAlignmentToTop = true;
     [SerializeField] private AudioClip typingSound;
     [SerializeField] private AudioSource audioSource;
 
@@ -188,6 +189,10 @@ public class PrologueController : MonoBehaviour
     private void StartTypewriter(TMP_Text textComponent)
     {
         StopTypewriter();
+        if (lockTextAlignmentToTop && textComponent != null)
+        {
+            textComponent.verticalAlignment = VerticalAlignmentOptions.Top;
+        }
         typingRoutine = StartCoroutine(TypewriterRoutine(textComponent));
     }
 
