@@ -12,7 +12,7 @@ public class SurfaceModifier : MonoBehaviour
     public SurfaceType surfaceType = SurfaceType.MudPeatBog;
 
     [Range(0f, 1f)]
-    [Tooltip("Persentase pengurangan kecepatan dan akselerasi (35% default sesuai W1-04)")]
+    [Tooltip("Persentase pengurangan kecepatan (misal: 0.35 = melambat 35%)")]
     public float speedDragPenalty = 0.35f;
 
     public float GetSpeedMultiplier()

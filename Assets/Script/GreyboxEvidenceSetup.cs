@@ -8,16 +8,7 @@ public class GreyboxEvidenceSetup : MonoBehaviour
     public InteractableObject permitEvidence;
     public NPCMandor npcMandor;
 
-    [Header("Testing Instructions")]
-    [TextArea(4, 8)]
-    public string testingGuide =
-        "PETUNJUK PENGUJIAN LENGKAP 6 MEKANISME:\n" +
-        "1. Navigasi & Eksplorasi: WASD + Shift (Lari), Mouse Look, Head-bob, Zona Lumpur.\n" +
-        "2. Deteksi Reticle: Sorot objek bukti pada jarak <= 2.5m untuk memunculkan prompt [E].\n" +
-        "3. Inspeksi 3D: Tekan [E] untuk inspeksi 360 drag, scroll zoom, sorot Hotspot 0.5 detik, tekan [F] ambil atau [Q] simpan.\n" +
-        "4. Jurnal Otomatis: Tekan [J] untuk membuka/menutup Jurnal Investigasi & Laporan STADI 2025.\n" +
-        "5. Dialog Konvergen: Bicara ke Pak Hendra [E] untuk konfrontasi 4 rute & 3 Ending (A/B/C).\n" +
-        "6. FSM State: Kontrol karakter terkunci saat Inspeksi, Jurnal, dan Dialog.";
+
 
     private void Start()
     {

@@ -69,24 +69,9 @@ public class InteractableObject : MonoBehaviour
 
     public virtual void Interact(Transform playerTransform)
     {
-
-        if (ClueInspector.Instance == null)
-        {
-            var inspector = Object.FindObjectOfType<ClueInspector>();
-            if (inspector == null)
-            {
-                GameObject studioObj = new GameObject("InspectionStudio");
-                inspector = studioObj.AddComponent<ClueInspector>();
-            }
-        }
-
         if (ClueInspector.Instance != null)
         {
             ClueInspector.Instance.StartInspection(this);
-        }
-        else
-        {
-            Debug.Log($"[InteractableObject] Berinteraksi dengan {clueName}, studio inspeksi sedang disiapkan.");
         }
     }
 

@@ -21,15 +21,14 @@ public class ClueInspector : MonoBehaviour
         }
     }
 
-    [Header("Inspection Studio Setup (W1-08)")]
+    [Header("Studio References")]
     public Camera inspectionCamera;
     public Transform studioPivot;
     public GameObject threePointLightingSetup;
     public InspectionUI inspectionUI;
 
-    [Header("Gyroscopic Drag & Damping Engine (W1-09)")]
+    [Header("Rotation & Damping")]
     public float rotationSpeed = 5f;
-    [Tooltip("Laju deselerasi putaran saat klik mouse dilepas (Damping)")]
     public float dampingRate = 4f;
 
     [Header("Zoom Settings")]

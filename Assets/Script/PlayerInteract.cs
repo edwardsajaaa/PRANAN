@@ -3,17 +3,17 @@ using System.Collections.Generic;
 
 public class PlayerInteract : MonoBehaviour
 {
-    [Header("Scanner Cone Settings (W1-05)")]
-    [Tooltip("Sudut total kerucut pandang (30 derajat sesuai W1-05)")]
+    [Header("Scanner Cone Settings")]
+    [Tooltip("Sudut total kerucut pandang deteksi")]
     public float coneAngle = 30f;
     [Tooltip("Jarak deteksi maksimum")]
     public float maxDistance = 3.5f;
 
-    [Header("Line-of-Sight (LOS) Occlusion Layer")]
+    [Header("Line-of-Sight Occlusion Layer")]
     [Tooltip("Layer halangan (dinding, tebing, pohon) yang memblokir pandangan")]
     public LayerMask occlusionMask = ~0;
 
-    [Header("Target Weighting Weights (W1-06)")]
+    [Header("Target Weighting")]
     [Range(0f, 1f)] public float angleWeight = 0.6f;
     [Range(0f, 1f)] public float distanceWeight = 0.4f;
 

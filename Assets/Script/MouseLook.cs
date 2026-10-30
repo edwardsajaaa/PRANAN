@@ -8,7 +8,7 @@ public class MouseLook : MonoBehaviour
     public Transform playerBody;
 
     [Header("Clamping Limits")]
-    [Tooltip("Pembatasan sudut vertikal kamera sesuai W1-02 (-80 s.d. +80 derajat)")]
+    [Tooltip("Pembatasan sudut vertikal kamera (-80 s.d. +80 derajat)")]
     public float minPitch = -80f;
     public float maxPitch = 80f;
 

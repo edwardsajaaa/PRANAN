@@ -49,9 +49,10 @@ public class GameStateManager : MonoBehaviour
 
     private void Start()
     {
-        SetState(GameState.Exploration);
-        if (JournalManager.Instance != null) { }
-        if (DialogueManager.Instance != null) { }
+        if (currentState != GameState.Menu)
+        {
+            SetState(GameState.Exploration);
+        }
     }
 
     public void SetState(GameState newState)

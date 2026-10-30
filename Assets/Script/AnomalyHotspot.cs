@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class AnomalyHotspot : MonoBehaviour
 {
-    [Header("Hotspot Details (W1-10)")]
+    [Header("Hotspot Details")]
     public string anomalyTitle = "Kejanggalan Forensik";
     [TextArea(2, 4)]
     public string anomalyObservationLog = "Ditemukan jejak pemotongan mekanik yang rata.";
@@ -12,7 +12,7 @@ public class AnomalyHotspot : MonoBehaviour
     [Tooltip("Radius toleransi bidikan kursor (dalam pixel layar atau unit jarak)")]
     public float screenRadius = 50f;
 
-    [Tooltip("Waktu observasi minimal (0.5 detik sesuai kriteria W1-10)")]
+    [Tooltip("Waktu observasi minimal yang dibutuhkan")]
     public float requiredDwellTime = 0.5f;
 
     public float facingAngleDotThreshold = 0.3f;
