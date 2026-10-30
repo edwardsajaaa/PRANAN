@@ -1,11 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using TMPro;
 
 [RequireComponent(typeof(CanvasGroup))]
-public class PrologueController : MonoBehaviour, IPointerClickHandler
+public class PrologueController : MonoBehaviour
 {
     public static PrologueController Instance { get; private set; }
 
@@ -29,6 +28,7 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
 
     private int currentPageIndex;
     private float lastInputTime;
+    private int lastInputFrame = -1;
     private bool isWaitingDelay;
     private bool isTyping;
     private bool isEnding;
@@ -73,19 +73,22 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
         }
     }
 
-    public void OnPointerClick(PointerEventData eventData)
-    {
-        HandleInput();
-    }
-
     private void HandleInput()
     {
         if (isEnding) return;
+
+        // Cegah eksekusi ganda dalam frame yang sama
+        if (Time.frameCount == lastInputFrame) return;
+        lastInputFrame = Time.frameCount;
+
+        // Cooldown debouncing antara aksi klik pemain
+        if (Time.unscaledTime - lastInputTime < inputCooldown) return;
 
         if (isWaitingDelay)
         {
             StopAllCoroutines();
             isWaitingDelay = false;
+            lastInputTime = Time.unscaledTime;
             ShowContent();
             return;
         }
@@ -96,9 +99,7 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             return;
         }
 
-        if (Time.unscaledTime - lastInputTime < inputCooldown) return;
         lastInputTime = Time.unscaledTime;
-
         NextPage();
     }
 
@@ -139,17 +140,31 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             {
                 if (narrativeObjects[i] == null) continue;
                 bool isCurrent = (i == index);
-                narrativeObjects[i].SetActive(isCurrent);
 
-                if (isCurrent && useTypewriterEffect)
+                if (isCurrent)
                 {
                     TMP_Text tmp = narrativeObjects[i].GetComponentInChildren<TMP_Text>(true);
-                    if (tmp != null) StartTypewriter(tmp);
+                    if (tmp != null)
+                    {
+                        tmp.maxVisibleCharacters = 0;
+                    }
+
+                    narrativeObjects[i].SetActive(true);
+
+                    if (useTypewriterEffect && tmp != null)
+                    {
+                        StartTypewriter(tmp);
+                    }
+                }
+                else
+                {
+                    narrativeObjects[i].SetActive(false);
                 }
             }
         }
         else if (singlePrologueText != null)
         {
+            singlePrologueText.maxVisibleCharacters = 0;
             singlePrologueText.gameObject.SetActive(true);
             if (useTypewriterEffect)
                 StartTypewriter(singlePrologueText);
@@ -181,9 +196,16 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
         isTyping = true;
         currentTypingText = textComponent;
 
-        textComponent.ForceMeshUpdate();
-        int totalChars = textComponent.textInfo.characterCount;
         textComponent.maxVisibleCharacters = 0;
+        textComponent.ForceMeshUpdate();
+
+        int totalChars = textComponent.textInfo.characterCount;
+        if (totalChars == 0 && !string.IsNullOrEmpty(textComponent.text))
+        {
+            yield return null;
+            textComponent.ForceMeshUpdate();
+            totalChars = textComponent.textInfo.characterCount;
+        }
 
         for (int i = 1; i <= totalChars; i++)
         {
