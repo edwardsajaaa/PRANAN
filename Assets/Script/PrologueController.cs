@@ -18,6 +18,7 @@ public class PrologueController : MonoBehaviour
     [Header("Timing & Speed")]
     [SerializeField] private float initialBlackDelay = 2.0f;
     [SerializeField] private float typingSpeed = 0.035f;
+    [SerializeField] private float fastTypingSpeed = 0.007f;
     [SerializeField] private float fadeOutDuration = 0.6f;
     [SerializeField] private float inputCooldown = 0.25f;
 
@@ -94,11 +95,8 @@ public class PrologueController : MonoBehaviour
             return;
         }
 
-        if (isTyping)
-        {
-            CompleteTyping();
-            return;
-        }
+        // Jika teks sedang diketik, abaikan klik instan (pemain harus menahan klik untuk mempercepat)
+        if (isTyping) return;
 
         lastInputTime = Time.unscaledTime;
         NextPage();
@@ -219,7 +217,10 @@ public class PrologueController : MonoBehaviour
             if (typingSound != null && audioSource != null && i % 2 == 0)
                 audioSource.PlayOneShot(typingSound, 0.35f);
 
-            yield return new WaitForSecondsRealtime(typingSpeed);
+            bool isHoldingSpeedUp = Input.GetMouseButton(0) || Input.GetKey(KeyCode.Space);
+            float currentDelay = isHoldingSpeedUp ? fastTypingSpeed : typingSpeed;
+
+            yield return new WaitForSecondsRealtime(currentDelay);
         }
 
         CompleteTyping();
