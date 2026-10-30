@@ -24,7 +24,8 @@ public class CameraEffects : MonoBehaviour
     public float bobPitchNod = 1.1f;
     public float bobRollSway = 1.3f;
     public float maxStrafeRoll = 1.8f;
-    public float maxTurnRoll = 1.4f;
+    [Tooltip("Kemiringan kamera saat memutar mouse. Disarankan 0 agar kamera tidak miring saat digerakkan cepat.")]
+    public float maxTurnRoll = 0f;
     public float rollSmoothing = 7f;
 
     [Header("Organic Idle Breathing")]
