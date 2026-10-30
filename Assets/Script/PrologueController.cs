@@ -14,6 +14,7 @@ public class PrologueController : MonoBehaviour
     [SerializeField] private GameObject titleObject;
     [SerializeField] private GameObject[] narrativeObjects;
     [SerializeField] private TextMeshProUGUI singlePrologueText;
+    [SerializeField] private GameObject playerCanvas;
 
     [Header("Timing & Speed")]
     [SerializeField] private float initialBlackDelay = 2.0f;
@@ -275,6 +276,11 @@ public class PrologueController : MonoBehaviour
             Cursor.visible = false;
         }
 
+        if (playerCanvas != null)
+        {
+            playerCanvas.SetActive(true);
+        }
+
         gameObject.SetActive(false);
     }
 
@@ -282,6 +288,7 @@ public class PrologueController : MonoBehaviour
     {
         if (blackPanel != null) blackPanel.SetActive(true);
         if (titleObject != null) titleObject.SetActive(false);
+        if (playerCanvas != null) playerCanvas.SetActive(false);
 
         if (narrativeObjects != null)
         {
@@ -323,6 +330,19 @@ public class PrologueController : MonoBehaviour
 
             if (pages.Count > 0)
                 narrativeObjects = pages.ToArray();
+        }
+
+        if (playerCanvas == null)
+        {
+            GameObject player = GameObject.Find("Player") ?? GameObject.FindWithTag("Player");
+            if (player != null)
+            {
+                Canvas[] canvases = player.GetComponentsInChildren<Canvas>(true);
+                if (canvases.Length > 0)
+                {
+                    playerCanvas = canvases[0].gameObject;
+                }
+            }
         }
     }
 
