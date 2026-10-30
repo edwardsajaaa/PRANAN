@@ -18,16 +18,12 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
     [TextArea(4, 12)]
     public string[] prologuePages = new string[4]
     {
-        // Narasi Pertama (Tampilan Awal)
         "Hutan hujan tak pernah benar-benar sunyi.\n\nAda jutaan bisikan kehidupan di balik lebatnya tajuk kanopi yang menahan terik dunia.",
 
-        // Narasi Kedua (Klik Mouse Kedua)
         "Namun di puncak kemarau panjang tahun ini, keheningan asing merayap ke jantung Hutan Lindung Rano Towa.\n\nRatusan hektare pepohonan hilang tanpa jejak dalam hitungan minggu.",
 
-        // Narasi Ketiga (Klik Mouse Ketiga)
         "Laporan satelit mendeteksi anomali tebangan liar di luar batas konsesi resmi. Jejak alat berat dan tunggul kayu bernomor fiktif tersembunyi di balik rawa gambut yang rapuh.",
 
-        // Narasi Keempat (Klik Mouse Keempat - Terakhir)
         "Anda dikirim untuk mengumpulkan bukti materiil tak terbantahkan dan mengonfrontasi pihak pengelola sebelum kejahatan ini ditutup sepihak.\n\nKebenaran ada di antara pepohonan yang tersisa."
     };
 
@@ -46,6 +42,19 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
 
     [Tooltip("Jika true, script akan mengatur posisi RectTransform secara otomatis. Set FALSE jika Anda menata posisi UI sendiri.")]
     public bool autoGenerateLayout = false;
+
+    [Header("Timing Layar Hitam (Delay Awal)")]
+    [Tooltip("Objek Black Panel (Layar Hitam). Jika kosong, otomatis mencari child bernama 'Black Panel'.")]
+    public GameObject blackPanel;
+
+    [Tooltip("Objek Judul Prolog. Jika kosong, otomatis mencari child bernama 'Prolog' atau 'Title'.")]
+    public GameObject titleObject;
+
+    [Tooltip("Durasi jeda (dalam detik) layar hitam polos muncul terlebih dahulu sebelum judul Prolog dan teks Narasi diaktifkan.")]
+    public float initialBlackDelay = 2.0f;
+
+    [Tooltip("Jika true, pemain dapat mengklik mouse untuk langsung memunculkan teks tanpa harus menunggu jeda detik selesai.")]
+    public bool allowSkipDelayWithClick = true;
 
     [Header("3. Timing & Animasi")]
     public float fadeInDuration = 0.5f;
@@ -68,6 +77,7 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
     private float lastAdvanceTime = -1f;
     public float inputCooldown = 0.35f;
     private bool isTransitioning = false;
+    private bool isWaitingInitialDelay = false;
     private bool isDismissed = false;
 
     private void Awake()
@@ -82,7 +92,6 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
         if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
 
-        // Pastikan EventSystem tersedia di scene
         if (FindObjectOfType<EventSystem>() == null)
         {
             GameObject es = new GameObject("EventSystem");
@@ -90,7 +99,6 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             es.AddComponent<StandaloneInputModule>();
         }
 
-        // Auto-find references dari child
         AutoDetectChildReferences();
 
         if (autoGenerateLayout)
@@ -98,13 +106,13 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             SetupUIHierarchyIfMissing();
         }
 
-        ApplyCurrentPageText();
+        // Sembunyikan semua teks/narasi di awal agar layar hitam polos tampil duluan
+        HideAllPrologueContent();
     }
 
     private void Start()
     {
         currentPageIndex = 0;
-        ApplyCurrentPageText();
 
         if (autoStartOnPlay && !isDismissed)
         {
@@ -116,14 +124,28 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
     {
         if (isDismissed) return;
 
-        // Pastikan kursor mouse selalu terlihat & tidak terkunci selama prolog tampil
         if (!Cursor.visible || Cursor.lockState != CursorLockMode.None)
         {
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
         }
 
-        // Jika user klik saat masih fade-in, langsung skip fade-in ke teks penuh
+        // Jika sedang dalam jeda layar hitam polos (sebelum judul & narasi muncul)
+        if (isWaitingInitialDelay)
+        {
+            if (allowSkipDelayWithClick && (
+                Input.GetMouseButtonDown(0) || 
+                Input.GetMouseButtonDown(1) || 
+                Input.GetKeyDown(KeyCode.Space) || 
+                Input.GetKeyDown(KeyCode.Return) || 
+                Input.GetKeyDown(KeyCode.KeypadEnter) ||
+                Input.GetKeyDown(KeyCode.E)))
+            {
+                SkipInitialDelay();
+            }
+            return;
+        }
+
         if (isTransitioning)
         {
             if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
@@ -136,7 +158,6 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             return;
         }
 
-        // Input untuk maju ke halaman berikutnya (Klik Kiri, Klik Kanan, Spasi, Enter)
         if (Input.GetMouseButtonDown(0) || 
             Input.GetMouseButtonDown(1) || 
             Input.GetKeyDown(KeyCode.Space) || 
@@ -148,17 +169,67 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
         }
     }
 
-    // Mendeteksi klik langsung pada Canvas / UI Panel via EventSystem
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (isWaitingInitialDelay)
+        {
+            if (allowSkipDelayWithClick) SkipInitialDelay();
+            return;
+        }
         AdvanceToNextPage();
+    }
+
+    public void SkipInitialDelay()
+    {
+        if (!isWaitingInitialDelay) return;
+        Debug.Log("[Prologue] Pemain mengklik; langsung memunculkan judul Prolog dan narasi pertama!");
+        ShowInitialPrologueContent();
+    }
+
+    private void HideAllPrologueContent()
+    {
+        if (titleObject != null)
+        {
+            titleObject.SetActive(false);
+        }
+        if (narrativeObjects != null)
+        {
+            foreach (var obj in narrativeObjects)
+            {
+                if (obj != null) obj.SetActive(false);
+            }
+        }
+        if (singlePrologueText != null && (narrativeObjects == null || narrativeObjects.Length == 0))
+        {
+            singlePrologueText.gameObject.SetActive(false);
+        }
+        if (avatarImage != null)
+        {
+            avatarImage.gameObject.SetActive(false);
+        }
+    }
+
+    private void ShowInitialPrologueContent()
+    {
+        isWaitingInitialDelay = false;
+        
+        if (titleObject != null)
+        {
+            titleObject.SetActive(true);
+        }
+        if (singlePrologueText != null && (narrativeObjects == null || narrativeObjects.Length == 0))
+        {
+            singlePrologueText.gameObject.SetActive(true);
+        }
+
+        ApplyCurrentPageText();
+        lastAdvanceTime = Time.unscaledTime;
     }
 
     public void AdvanceToNextPage()
     {
-        if (isDismissed || isTransitioning) return;
+        if (isDismissed || isTransitioning || isWaitingInitialDelay) return;
 
-        // Cegah eksekusi berulang kali dalam 1 klik (Debounce cooldown)
         if (Time.unscaledTime - lastAdvanceTime < inputCooldown) return;
         lastAdvanceTime = Time.unscaledTime;
 
@@ -189,31 +260,41 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
 
     private IEnumerator PlayPrologueSequence()
     {
-        isTransitioning = true;
-        canvasGroup.alpha = 0f;
+        // 1. Pastikan background panel hitam aktif
+        if (blackPanel != null) blackPanel.SetActive(true);
+
+        // 2. Sembunyikan semua teks/narasi agar layar hitam polos tampil duluan
+        HideAllPrologueContent();
+
+        canvasGroup.alpha = 1f;
         canvasGroup.interactable = true;
         canvasGroup.blocksRaycasts = true;
 
-        // Kunci pergerakan pemain selama prolog tampil
         if (GameStateManager.Instance != null)
         {
             GameStateManager.Instance.SetState(GameState.Menu);
         }
 
-        // Tampilkan kursor bersih dan bebas digerakkan
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
 
-        // Fade in cepat
-        float elapsed = 0f;
-        while (elapsed < fadeInDuration)
+        // 3. Jeda Layar Hitam Polos selama beberapa detik sesuai pengaturan
+        if (initialBlackDelay > 0f)
         {
-            elapsed += Time.unscaledDeltaTime;
-            canvasGroup.alpha = Mathf.Clamp01(elapsed / fadeInDuration);
-            yield return null;
+            isWaitingInitialDelay = true;
+            float timer = 0f;
+            while (timer < initialBlackDelay && isWaitingInitialDelay)
+            {
+                timer += Time.unscaledDeltaTime;
+                yield return null;
+            }
         }
-        canvasGroup.alpha = 1f;
-        isTransitioning = false;
+
+        // 4. Setelah selang waktu jeda selesai, aktifkan objek Prolog & Narasi pertama
+        if (isWaitingInitialDelay || initialBlackDelay <= 0f)
+        {
+            ShowInitialPrologueContent();
+        }
     }
 
     private IEnumerator FadeOutAndBeginGame()
@@ -236,7 +317,6 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
         isDismissed = true;
         isTransitioning = false;
 
-        // Alihkan state ke Eksplorasi aktif & kunci kursor untuk gameplay first-person
         if (GameStateManager.Instance != null)
         {
             GameStateManager.Instance.SetState(GameState.Exploration);
@@ -247,17 +327,45 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             Cursor.visible = false;
         }
 
-        // Nonaktifkan canvas agar menghemat draw call
         gameObject.SetActive(false);
     }
 
     private void AutoDetectChildReferences()
     {
-        // 1. Deteksi apakah user membuat objek terpisah Narasi, Narasi (1), Narasi (2), dll di Hierarchy
-        if (narrativeObjects == null || narrativeObjects.Length == 0)
+        if (blackPanel == null)
         {
             Transform panel = transform.Find("Black Panel");
-            Transform searchRoot = panel != null ? panel : transform;
+            if (panel != null) blackPanel = panel.gameObject;
+        }
+
+        Transform searchRoot = blackPanel != null ? blackPanel.transform : transform;
+
+        if (titleObject == null)
+        {
+            Transform titleT = searchRoot.Find("Prolog");
+            if (titleT == null) titleT = searchRoot.Find("Title");
+            if (titleT == null)
+            {
+                for (int i = 0; i < searchRoot.childCount; i++)
+                {
+                    Transform c = searchRoot.GetChild(i);
+                    string lower = c.name.ToLower();
+                    if (lower.Contains("prolog") || lower.Contains("title") || lower.Contains("judul"))
+                    {
+                        titleT = c;
+                        break;
+                    }
+                }
+            }
+            if (titleT != null)
+            {
+                titleObject = titleT.gameObject;
+                Debug.Log($"[Prologue] Otomatis mendeteksi objek judul '{titleObject.name}'!");
+            }
+        }
+
+        if (narrativeObjects == null || narrativeObjects.Length == 0)
+        {
             List<GameObject> narasiList = new List<GameObject>();
 
             for (int i = 0; i < searchRoot.childCount; i++)
@@ -277,7 +385,6 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             }
         }
 
-        // 2. Deteksi singlePrologueText (utamakan objek yang bernama 'narasi' atau 'text', bukan judul 'prolog')
         if (singlePrologueText == null)
         {
             TextMeshProUGUI[] tmps = GetComponentsInChildren<TextMeshProUGUI>(true);
@@ -321,7 +428,6 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
 
     private void ApplyCurrentPageText()
     {
-        // MODE A: Jika pengguna membuat objek terpisah di Hierarchy (Narasi, Narasi (1), dst)
         if (narrativeObjects != null && narrativeObjects.Length > 0)
         {
             currentPageIndex = Mathf.Clamp(currentPageIndex, 0, narrativeObjects.Length - 1);
@@ -336,7 +442,6 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             return;
         }
 
-        // MODE B: Jika pengguna memakai 1 TextMeshPro (Script mengubah isi teksnya)
         if (prologuePages == null || prologuePages.Length == 0)
         {
             prologuePages = new string[4]
@@ -377,21 +482,18 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             Debug.Log($"[Prologue] Mode 1 Text: Mengubah isi teks pada '{singlePrologueText.name}' ke Halaman {currentPageIndex + 1}/{prologuePages.Length}");
         }
 
-        // 2. Jika ada teks terpisah untuk judul
         if (separateTitleText != null && !string.IsNullOrEmpty(prologueTitle))
         {
             separateTitleText.text = prologueTitle;
             if (preferredFont != null) separateTitleText.font = preferredFont;
         }
 
-        // 3. Jika ada teks terpisah untuk prompt
         if (separatePromptText != null && !string.IsNullOrEmpty(activePrompt))
         {
             separatePromptText.text = activePrompt;
             if (preferredFont != null) separatePromptText.font = preferredFont;
         }
 
-        // 4. Avatar gambar jika ada
         if (avatarImage != null && avatarSprite != null)
         {
             avatarImage.gameObject.SetActive(isLastPage);
@@ -401,7 +503,6 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
 
     public void SetupUIHierarchyIfMissing()
     {
-        // Cari font FragmentMono jika preferredFont belum diisi
         if (preferredFont == null)
         {
             var allFonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
@@ -415,7 +516,6 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             }
         }
 
-        // Pastikan Canvas Scaler diatur dengan baik (1920x1080)
         CanvasScaler scaler = GetComponentInParent<CanvasScaler>();
         if (scaler != null)
         {
@@ -424,7 +524,6 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             scaler.matchWidthOrHeight = 0.5f;
         }
 
-        // Cari atau buat Background Black Panel
         Transform panelT = transform.Find("Black Panel");
         GameObject panelObj;
         if (panelT != null)
@@ -449,7 +548,6 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
             panelImg.color = Color.black;
         }
 
-        // Content Container untuk memusatkan teks seperti gambar referensi
         Transform containerT = panelObj.transform.Find("ContentContainer");
         GameObject containerObj;
         if (containerT != null)
@@ -468,7 +566,6 @@ public class PrologueController : MonoBehaviour, IPointerClickHandler
         containerRect.offsetMin = Vector2.zero;
         containerRect.offsetMax = Vector2.zero;
 
-        // Single Unified Prologue Text (Judul + Isi + Signature dalam 1 TextMeshPro)
         if (singlePrologueText == null)
         {
             Transform existingText = panelObj.transform.Find("Text (TMP)");

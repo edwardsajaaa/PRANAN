@@ -18,7 +18,6 @@ void MainLight_half(float3 WorldPos, out half3 Dir, out half3 Color, out half Di
 
 void SampleSH_half(half3 normalWS, out half3 Ambient)
 {
-    // LPPV is not supported in Ligthweight Pipeline
     real4 SHCoefficients[7];
     SHCoefficients[0] = unity_SHAr;
     SHCoefficients[1] = unity_SHAg;
