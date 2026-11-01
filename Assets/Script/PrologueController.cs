@@ -21,6 +21,7 @@ public class PrologueController : MonoBehaviour
     [SerializeField] private float typingSpeed = 0.035f;
     [SerializeField] private float fastTypingSpeed = 0.007f;
     [SerializeField] private float fadeOutDuration = 0.6f;
+    [SerializeField] private float textFadeOutDuration = 0.4f;
     [SerializeField] private float inputCooldown = 0.25f;
 
     [Header("Typewriter & Audio")]
@@ -34,6 +35,7 @@ public class PrologueController : MonoBehaviour
     private int lastInputFrame = -1;
     private bool isWaitingDelay;
     private bool isTyping;
+    private bool isPageTransitioning;
     private bool isEnding;
     private Coroutine typingRoutine;
     private TMP_Text currentTypingText;
@@ -64,7 +66,7 @@ public class PrologueController : MonoBehaviour
 
     private void Update()
     {
-        if (isEnding) return;
+        if (isEnding || isPageTransitioning) return;
 
         EnsureCursorVisible();
 
@@ -78,7 +80,7 @@ public class PrologueController : MonoBehaviour
 
     private void HandleInput()
     {
-        if (isEnding) return;
+        if (isEnding || isPageTransitioning) return;
 
         // Cegah eksekusi ganda dalam frame yang sama
         if (Time.frameCount == lastInputFrame) return;
@@ -125,7 +127,10 @@ public class PrologueController : MonoBehaviour
     private void ShowContent()
     {
         if (titleObject != null)
+        {
+            ResetObjectAlpha(titleObject);
             titleObject.SetActive(true);
+        }
 
         ShowPage(0);
     }
@@ -143,6 +148,8 @@ public class PrologueController : MonoBehaviour
 
                 if (isCurrent)
                 {
+                    ResetObjectAlpha(narrativeObjects[i]);
+
                     TMP_Text tmp = narrativeObjects[i].GetComponentInChildren<TMP_Text>(true);
                     if (tmp != null)
                     {
@@ -164,6 +171,7 @@ public class PrologueController : MonoBehaviour
         }
         else if (singlePrologueText != null)
         {
+            ResetObjectAlpha(singlePrologueText.gameObject);
             singlePrologueText.maxVisibleCharacters = 0;
             singlePrologueText.gameObject.SetActive(true);
             if (useTypewriterEffect)
@@ -173,15 +181,123 @@ public class PrologueController : MonoBehaviour
 
     private void NextPage()
     {
-        int totalPages = narrativeObjects != null && narrativeObjects.Length > 0 ? narrativeObjects.Length : 1;
+        if (isEnding || isPageTransitioning) return;
+        StartCoroutine(TransitionToNextPage());
+    }
 
-        if (currentPageIndex + 1 < totalPages)
+    private IEnumerator TransitionToNextPage()
+    {
+        isPageTransitioning = true;
+        StopTypewriter();
+
+        // Cari objek narasi saat ini
+        GameObject currentPageObj = null;
+        if (narrativeObjects != null && currentPageIndex >= 0 && currentPageIndex < narrativeObjects.Length)
         {
+            currentPageObj = narrativeObjects[currentPageIndex];
+        }
+        else if (singlePrologueText != null)
+        {
+            currentPageObj = singlePrologueText.gameObject;
+        }
+
+        int totalPages = narrativeObjects != null && narrativeObjects.Length > 0 ? narrativeObjects.Length : 1;
+        bool isLastPage = (currentPageIndex + 1 >= totalPages);
+
+        // Animasi fade out untuk teks narasi (dan judul jika halaman terakhir)
+        if (currentPageObj != null && currentPageObj.activeSelf)
+        {
+            if (isLastPage && titleObject != null && titleObject.activeSelf)
+            {
+                StartCoroutine(FadeOutObjectRoutine(titleObject, textFadeOutDuration));
+            }
+
+            yield return StartCoroutine(FadeOutObjectRoutine(currentPageObj, textFadeOutDuration));
+        }
+
+        if (!isLastPage)
+        {
+            isPageTransitioning = false;
             ShowPage(currentPageIndex + 1);
         }
         else
         {
+            isPageTransitioning = false;
             StartCoroutine(FadeOutAndEnd());
+        }
+    }
+
+    private IEnumerator FadeOutObjectRoutine(GameObject targetObj, float duration)
+    {
+        if (targetObj == null) yield break;
+
+        CanvasGroup cg = targetObj.GetComponent<CanvasGroup>();
+        TMP_Text[] texts = targetObj.GetComponentsInChildren<TMP_Text>(true);
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float a = Mathf.Lerp(1f, 0f, t);
+
+            if (cg != null)
+            {
+                cg.alpha = a;
+            }
+            else
+            {
+                for (int i = 0; i < texts.Length; i++)
+                {
+                    if (texts[i] != null)
+                    {
+                        Color c = texts[i].color;
+                        c.a = a;
+                        texts[i].color = c;
+                    }
+                }
+            }
+
+            yield return null;
+        }
+
+        if (cg != null) cg.alpha = 0f;
+        else
+        {
+            for (int i = 0; i < texts.Length; i++)
+            {
+                if (texts[i] != null)
+                {
+                    Color c = texts[i].color;
+                    c.a = 0f;
+                    texts[i].color = c;
+                }
+            }
+        }
+
+        targetObj.SetActive(false);
+        ResetObjectAlpha(targetObj);
+    }
+
+    private void ResetObjectAlpha(GameObject targetObj)
+    {
+        if (targetObj == null) return;
+
+        CanvasGroup cg = targetObj.GetComponent<CanvasGroup>();
+        if (cg != null)
+        {
+            cg.alpha = 1f;
+        }
+
+        TMP_Text[] texts = targetObj.GetComponentsInChildren<TMP_Text>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            if (texts[i] != null)
+            {
+                Color c = texts[i].color;
+                c.a = 1f;
+                texts[i].color = c;
+            }
         }
     }
 
@@ -287,19 +403,30 @@ public class PrologueController : MonoBehaviour
     private void HideContent()
     {
         if (blackPanel != null) blackPanel.SetActive(true);
-        if (titleObject != null) titleObject.SetActive(false);
+        if (titleObject != null)
+        {
+            ResetObjectAlpha(titleObject);
+            titleObject.SetActive(false);
+        }
         if (playerCanvas != null) playerCanvas.SetActive(false);
 
         if (narrativeObjects != null)
         {
             foreach (var page in narrativeObjects)
             {
-                if (page != null) page.SetActive(false);
+                if (page != null)
+                {
+                    ResetObjectAlpha(page);
+                    page.SetActive(false);
+                }
             }
         }
 
         if (singlePrologueText != null)
+        {
+            ResetObjectAlpha(singlePrologueText.gameObject);
             singlePrologueText.gameObject.SetActive(false);
+        }
     }
 
     private void ResolveReferences()
