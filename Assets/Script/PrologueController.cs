@@ -12,17 +12,28 @@ public class PrologueController : MonoBehaviour
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private GameObject blackPanel;
     [SerializeField] private GameObject titleObject;
+    [SerializeField] private GameObject gameTitleObject;
+    [SerializeField] private GameObject gameSubtitleObject;
     [SerializeField] private GameObject[] narrativeObjects;
     [SerializeField] private TextMeshProUGUI singlePrologueText;
     [SerializeField] private GameObject playerCanvas;
 
-    [Header("Timing & Speed")]
+    [Header("Timing - Narasi & Typewriter")]
     [SerializeField] private float initialBlackDelay = 2.0f;
     [SerializeField] private float typingSpeed = 0.035f;
     [SerializeField] private float fastTypingSpeed = 0.007f;
-    [SerializeField] private float fadeOutDuration = 0.6f;
     [SerializeField] private float textFadeOutDuration = 0.4f;
     [SerializeField] private float inputCooldown = 0.25f;
+
+    [Header("Timing - Game Title Card (Cinematic)")]
+    [SerializeField] private float postNarrationBlackDelay = 2.0f;
+    [SerializeField] private float gameTitleFadeInDuration = 1.8f;
+    [SerializeField] private float gameSubtitleDelay = 0.5f;
+    [SerializeField] private float gameSubtitleFadeInDuration = 1.5f;
+    [SerializeField] private float gameTitleDisplayDuration = 2.5f;
+    [SerializeField] private float gameTitleFadeOutDuration = 1.2f;
+    [SerializeField] private float postTitleBlackDelay = 3.0f;
+    [SerializeField] private float fadeOutDuration = 0.8f;
 
     [Header("Typewriter & Audio")]
     [SerializeField] private bool useTypewriterEffect = true;
@@ -128,7 +139,7 @@ public class PrologueController : MonoBehaviour
     {
         if (titleObject != null)
         {
-            ResetObjectAlpha(titleObject);
+            SetObjectAlpha(titleObject, 1f);
             titleObject.SetActive(true);
         }
 
@@ -148,7 +159,7 @@ public class PrologueController : MonoBehaviour
 
                 if (isCurrent)
                 {
-                    ResetObjectAlpha(narrativeObjects[i]);
+                    SetObjectAlpha(narrativeObjects[i], 1f);
 
                     TMP_Text tmp = narrativeObjects[i].GetComponentInChildren<TMP_Text>(true);
                     if (tmp != null)
@@ -171,7 +182,7 @@ public class PrologueController : MonoBehaviour
         }
         else if (singlePrologueText != null)
         {
-            ResetObjectAlpha(singlePrologueText.gameObject);
+            SetObjectAlpha(singlePrologueText.gameObject, 1f);
             singlePrologueText.maxVisibleCharacters = 0;
             singlePrologueText.gameObject.SetActive(true);
             if (useTypewriterEffect)
@@ -204,7 +215,7 @@ public class PrologueController : MonoBehaviour
         int totalPages = narrativeObjects != null && narrativeObjects.Length > 0 ? narrativeObjects.Length : 1;
         bool isLastPage = (currentPageIndex + 1 >= totalPages);
 
-        // Animasi fade out untuk teks narasi (dan judul jika halaman terakhir)
+        // Animasi fade out untuk teks narasi (dan judul prolog jika halaman terakhir)
         if (currentPageObj != null && currentPageObj.activeSelf)
         {
             if (isLastPage && titleObject != null && titleObject.activeSelf)
@@ -222,30 +233,104 @@ public class PrologueController : MonoBehaviour
         }
         else
         {
-            isPageTransitioning = false;
-            StartCoroutine(FadeOutAndEnd());
+            // Selesai seluruh narasi! Jalankan sekuens sinematik Title & Subtitle Game
+            StartCoroutine(GameTitleSequence());
         }
     }
 
-    private IEnumerator FadeOutObjectRoutine(GameObject targetObj, float duration)
+    private IEnumerator GameTitleSequence()
+    {
+        isEnding = true; // Kunci input player, seluruh proses title card berjalan otomatis
+        isPageTransitioning = false;
+
+        // 1. Setelah narasi selesai, berikan jeda 2 detik di layar hitam
+        if (postNarrationBlackDelay > 0f)
+        {
+            yield return new WaitForSecondsRealtime(postNarrationBlackDelay);
+        }
+
+        // 2. Fade in secara pelan pada Title Game
+        if (gameTitleObject != null)
+        {
+            yield return StartCoroutine(FadeInObjectRoutine(gameTitleObject, gameTitleFadeInDuration));
+        }
+
+        // 3. Jeda sebelum subtitle menyusul
+        if (gameSubtitleDelay > 0f)
+        {
+            yield return new WaitForSecondsRealtime(gameSubtitleDelay);
+        }
+
+        // 4. Subtitle Game menyusul fade in
+        if (gameSubtitleObject != null)
+        {
+            yield return StartCoroutine(FadeInObjectRoutine(gameSubtitleObject, gameSubtitleFadeInDuration));
+        }
+
+        // 5. Tampilkan kedua judul dan subtitle selama beberapa detik
+        if (gameTitleDisplayDuration > 0f)
+        {
+            yield return new WaitForSecondsRealtime(gameTitleDisplayDuration);
+        }
+
+        // 6. Fade out Title Game & Subtitle Game bersamaan
+        Coroutine fadeTitle = null;
+        Coroutine fadeSubtitle = null;
+
+        if (gameTitleObject != null && gameTitleObject.activeSelf)
+            fadeTitle = StartCoroutine(FadeOutObjectRoutine(gameTitleObject, gameTitleFadeOutDuration));
+
+        if (gameSubtitleObject != null && gameSubtitleObject.activeSelf)
+            fadeSubtitle = StartCoroutine(FadeOutObjectRoutine(gameSubtitleObject, gameTitleFadeOutDuration));
+
+        if (fadeTitle != null) yield return fadeTitle;
+        if (fadeSubtitle != null) yield return fadeSubtitle;
+
+        // 7. Jeda black screen lumayan lama (3 detik)
+        if (postTitleBlackDelay > 0f)
+        {
+            yield return new WaitForSecondsRealtime(postTitleBlackDelay);
+        }
+
+        // 8. Fade out black screen ke gameplay
+        yield return StartCoroutine(FadeOutAndEnd());
+    }
+
+    private IEnumerator FadeInObjectRoutine(GameObject targetObj, float duration)
     {
         if (targetObj == null) yield break;
 
+        SetObjectAlpha(targetObj, 0f);
+        targetObj.SetActive(true);
+
         CanvasGroup cg = targetObj.GetComponent<CanvasGroup>();
         TMP_Text[] texts = targetObj.GetComponentsInChildren<TMP_Text>(true);
+
+        // Jangan gunakan animasi ketik untuk title / subtitle
+        if (texts != null)
+        {
+            for (int i = 0; i < texts.Length; i++)
+            {
+                if (texts[i] != null)
+                {
+                    texts[i].maxVisibleCharacters = int.MaxValue;
+                    texts[i].ForceMeshUpdate();
+                }
+            }
+        }
 
         float elapsed = 0f;
         while (elapsed < duration)
         {
             elapsed += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
-            float a = Mathf.Lerp(1f, 0f, t);
+            float a = Mathf.Lerp(0f, 1f, t);
 
             if (cg != null)
             {
                 cg.alpha = a;
             }
-            else
+            else if (texts != null)
             {
                 for (int i = 0; i < texts.Length; i++)
                 {
@@ -261,32 +346,58 @@ public class PrologueController : MonoBehaviour
             yield return null;
         }
 
-        if (cg != null) cg.alpha = 0f;
-        else
-        {
-            for (int i = 0; i < texts.Length; i++)
-            {
-                if (texts[i] != null)
-                {
-                    Color c = texts[i].color;
-                    c.a = 0f;
-                    texts[i].color = c;
-                }
-            }
-        }
-
-        targetObj.SetActive(false);
-        ResetObjectAlpha(targetObj);
+        SetObjectAlpha(targetObj, 1f);
     }
 
-    private void ResetObjectAlpha(GameObject targetObj)
+    private IEnumerator FadeOutObjectRoutine(GameObject targetObj, float duration)
+    {
+        if (targetObj == null || !targetObj.activeSelf) yield break;
+
+        CanvasGroup cg = targetObj.GetComponent<CanvasGroup>();
+        TMP_Text[] texts = cg == null ? targetObj.GetComponentsInChildren<TMP_Text>(true) : null;
+
+        float startAlpha = cg != null ? cg.alpha : (texts != null && texts.Length > 0 && texts[0] != null ? texts[0].color.a : 1f);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float a = Mathf.Lerp(startAlpha, 0f, t);
+
+            if (cg != null)
+            {
+                cg.alpha = a;
+            }
+            else if (texts != null)
+            {
+                for (int i = 0; i < texts.Length; i++)
+                {
+                    if (texts[i] != null)
+                    {
+                        Color c = texts[i].color;
+                        c.a = a;
+                        texts[i].color = c;
+                    }
+                }
+            }
+
+            yield return null;
+        }
+
+        SetObjectAlpha(targetObj, 0f);
+        targetObj.SetActive(false);
+        SetObjectAlpha(targetObj, 1f);
+    }
+
+    private void SetObjectAlpha(GameObject targetObj, float alpha)
     {
         if (targetObj == null) return;
 
         CanvasGroup cg = targetObj.GetComponent<CanvasGroup>();
         if (cg != null)
         {
-            cg.alpha = 1f;
+            cg.alpha = alpha;
         }
 
         TMP_Text[] texts = targetObj.GetComponentsInChildren<TMP_Text>(true);
@@ -295,7 +406,7 @@ public class PrologueController : MonoBehaviour
             if (texts[i] != null)
             {
                 Color c = texts[i].color;
-                c.a = 1f;
+                c.a = alpha;
                 texts[i].color = c;
             }
         }
@@ -403,11 +514,25 @@ public class PrologueController : MonoBehaviour
     private void HideContent()
     {
         if (blackPanel != null) blackPanel.SetActive(true);
+
         if (titleObject != null)
         {
-            ResetObjectAlpha(titleObject);
+            SetObjectAlpha(titleObject, 1f);
             titleObject.SetActive(false);
         }
+
+        if (gameTitleObject != null)
+        {
+            SetObjectAlpha(gameTitleObject, 0f);
+            gameTitleObject.SetActive(false);
+        }
+
+        if (gameSubtitleObject != null)
+        {
+            SetObjectAlpha(gameSubtitleObject, 0f);
+            gameSubtitleObject.SetActive(false);
+        }
+
         if (playerCanvas != null) playerCanvas.SetActive(false);
 
         if (narrativeObjects != null)
@@ -416,7 +541,7 @@ public class PrologueController : MonoBehaviour
             {
                 if (page != null)
                 {
-                    ResetObjectAlpha(page);
+                    SetObjectAlpha(page, 1f);
                     page.SetActive(false);
                 }
             }
@@ -424,7 +549,7 @@ public class PrologueController : MonoBehaviour
 
         if (singlePrologueText != null)
         {
-            ResetObjectAlpha(singlePrologueText.gameObject);
+            SetObjectAlpha(singlePrologueText.gameObject, 1f);
             singlePrologueText.gameObject.SetActive(false);
         }
     }
@@ -439,10 +564,25 @@ public class PrologueController : MonoBehaviour
 
         Transform searchRoot = blackPanel != null ? blackPanel.transform : transform;
 
+        // Header teks prolog (misal "Prolog", "Prolog Cerita :")
         if (titleObject == null)
         {
             Transform t = searchRoot.Find("Prolog") ?? searchRoot.Find("Title");
             if (t != null) titleObject = t.gameObject;
+        }
+
+        // Title Game (Judul game utama, misal "Title Game")
+        if (gameTitleObject == null)
+        {
+            Transform gt = searchRoot.Find("Title Game") ?? searchRoot.Find("Game Title");
+            if (gt != null) gameTitleObject = gt.gameObject;
+        }
+
+        // Subtitle Game (Subjudul game, misal "Subtitle Game")
+        if (gameSubtitleObject == null)
+        {
+            Transform gs = searchRoot.Find("Subtitle Game") ?? searchRoot.Find("Game Subtitle") ?? searchRoot.Find("Subtitle");
+            if (gs != null) gameSubtitleObject = gs.gameObject;
         }
 
         if (narrativeObjects == null || narrativeObjects.Length == 0)
@@ -451,8 +591,15 @@ public class PrologueController : MonoBehaviour
             for (int i = 0; i < searchRoot.childCount; i++)
             {
                 Transform child = searchRoot.GetChild(i);
-                if (child.name.ToLower().StartsWith("narasi"))
+                string childName = child.name.ToLower();
+                // Filter hanya objek narasi murni, jangan sertakan Title Game, Subtitle Game, ataupun header Prolog
+                if (childName.StartsWith("narasi") && 
+                    child.gameObject != gameTitleObject && 
+                    child.gameObject != gameSubtitleObject && 
+                    child.gameObject != titleObject)
+                {
                     pages.Add(child.gameObject);
+                }
             }
 
             if (pages.Count > 0)
