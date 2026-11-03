@@ -27,6 +27,7 @@ Shader "Custom/LowPolyTerrain"
             #pragma fragment frag
             #pragma target 3.0
             #pragma multi_compile_fwdbase
+            #pragma multi_compile_fog
             #include "UnityCG.cginc"
             #include "AutoLight.cginc"
             #include "Lighting.cginc"
@@ -43,6 +44,7 @@ Shader "Custom/LowPolyTerrain"
                 float4 pos : SV_POSITION;
                 float3 worldPos : TEXCOORD0;
                 LIGHTING_COORDS(1, 2)
+                UNITY_FOG_COORDS(3)
             };
 
             fixed4 _GrassColor;
@@ -61,6 +63,7 @@ Shader "Custom/LowPolyTerrain"
                 o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
                 o.pos = UnityObjectToClipPos(v.vertex);
                 TRANSFER_VERTEX_TO_FRAGMENT(o);
+                UNITY_TRANSFER_FOG(o, o.pos);
                 return o;
             }
 
@@ -88,6 +91,8 @@ Shader "Custom/LowPolyTerrain"
 
                 fixed3 diffuse = _LightColor0.rgb * (NdotL * atten * _LightIntensity);
                 fixed3 finalColor = baseAlbedo * (diffuse + ambient);
+
+                UNITY_APPLY_FOG(i.fogCoord, finalColor);
 
                 return fixed4(finalColor, 1.0);
             }
