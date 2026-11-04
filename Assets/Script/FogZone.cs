@@ -107,5 +107,21 @@ public class FogZone : MonoBehaviour
         RenderSettings.fogColor = toColor;
         activeTransition = null;
     }
+
+    private void OnDrawGizmos()
+    {
+        BoxCollider box = GetComponent<BoxCollider>();
+        if (box == null) return;
+
+        // Gambar visualisasi volume kabut di Scene View
+        Color baseCol = overrideColor ? targetColor : new Color(0.85f, 0.85f, 0.85f, 1f);
+
+        Gizmos.color = new Color(baseCol.r, baseCol.g, baseCol.b, 0.2f);
+        Gizmos.matrix = transform.localToWorldMatrix;
+        Gizmos.DrawCube(box.center, box.size);
+
+        Gizmos.color = new Color(baseCol.r, baseCol.g, baseCol.b, 0.7f);
+        Gizmos.DrawWireCube(box.center, box.size);
+    }
 }
 
