@@ -34,6 +34,13 @@ public class InteractableObject : MonoBehaviour
     [Header("STADI 2025 Evidence Classification")]
     public ClueEvidenceType evidenceType = ClueEvidenceType.General;
 
+    [Header("Monologue / Thought (Pamali / Firewatch)")]
+    [Tooltip("Jika diisi, memicu monolog batin Rangga di bawah layar")]
+    [TextArea(2, 4)]
+    public string examinationMonologue;
+    public bool playMonologueOnInteract = true;
+    public bool trigger3DInspection = true;
+
     [Header("Interaction Settings")]
     [Tooltip("Titik fokus targeting (jika null, menggunakan posisi transform)")]
     public Transform targetPivot;
@@ -69,7 +76,15 @@ public class InteractableObject : MonoBehaviour
 
     public virtual void Interact(Transform playerTransform)
     {
-        if (ClueInspector.Instance != null)
+        if (!string.IsNullOrEmpty(examinationMonologue) && playMonologueOnInteract)
+        {
+            if (RadioDialogueManager.Instance != null)
+            {
+                RadioDialogueManager.Instance.ShowMonologue(examinationMonologue);
+            }
+        }
+
+        if (trigger3DInspection && ClueInspector.Instance != null)
         {
             ClueInspector.Instance.StartInspection(this);
         }
