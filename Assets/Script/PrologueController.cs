@@ -7,6 +7,8 @@ using TMPro;
 public class PrologueController : MonoBehaviour
 {
     public static PrologueController Instance { get; private set; }
+    public static event System.Action OnPrologueFinished;
+    public static bool IsPrologueRunning => Instance != null && Instance.gameObject.activeInHierarchy && !Instance.isEnding;
 
     [Header("UI References")]
     [SerializeField] private CanvasGroup canvasGroup;
@@ -507,6 +509,8 @@ public class PrologueController : MonoBehaviour
         {
             playerCanvas.SetActive(true);
         }
+
+        OnPrologueFinished?.Invoke();
 
         gameObject.SetActive(false);
     }

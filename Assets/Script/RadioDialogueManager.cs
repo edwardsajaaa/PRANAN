@@ -62,6 +62,13 @@ public class RadioDialogueManager : MonoBehaviour
     private void Start()
     {
         GameStateManager.OnStateChanged += HandleStateChanged;
+        PrologueController.OnPrologueFinished += HandlePrologueFinished;
+
+        if (PrologueController.IsPrologueRunning)
+        {
+            Debug.Log("[RadioDialogue] Prolog sedang aktif. Dialog Radio Scene 1 menunggu prolog selesai...");
+            return;
+        }
 
         if (autoPlayScene1OnExploration && !hasPlayedScene1)
         {
@@ -72,11 +79,21 @@ public class RadioDialogueManager : MonoBehaviour
     private void OnDestroy()
     {
         GameStateManager.OnStateChanged -= HandleStateChanged;
+        PrologueController.OnPrologueFinished -= HandlePrologueFinished;
+    }
+
+    private void HandlePrologueFinished()
+    {
+        Debug.Log("[RadioDialogue] Prolog selesai! Memulai radio dialogue Scene 1...");
+        if (autoPlayScene1OnExploration && !hasPlayedScene1)
+        {
+            TryTriggerScene1();
+        }
     }
 
     private void HandleStateChanged(GameState newState)
     {
-        if (newState == GameState.Exploration && !hasPlayedScene1)
+        if (newState == GameState.Exploration && !hasPlayedScene1 && !PrologueController.IsPrologueRunning)
         {
             TryTriggerScene1();
         }
