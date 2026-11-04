@@ -73,10 +73,6 @@ public class PlayerMovement : MonoBehaviour
             {
                 currentDragMultiplier = surface.GetSpeedMultiplier();
             }
-            else if (hit.collider.gameObject.tag == "Mud")
-            {
-                currentDragMultiplier = 0.65f;
-            }
         }
     }
 
@@ -118,10 +114,6 @@ public class PlayerMovement : MonoBehaviour
         if (other.TryGetComponent<SurfaceModifier>(out var surface))
         {
             currentDragMultiplier = Mathf.Min(currentDragMultiplier, surface.GetSpeedMultiplier());
-        }
-        else if (other.gameObject.tag == "Mud")
-        {
-            currentDragMultiplier = Mathf.Min(currentDragMultiplier, 0.65f);
         }
     }
 }
