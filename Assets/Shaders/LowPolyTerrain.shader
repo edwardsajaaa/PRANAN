@@ -6,11 +6,15 @@ Shader "Custom/LowPolyTerrain"
         _GrassHighColor ("Grass High Color", Color) = (0.22, 0.44, 0.18, 1.0)
         _RockColor ("Rock / Slope Color", Color) = (0.38, 0.40, 0.32, 1.0)
         _SoilColor ("Soil / Basin Color", Color) = (0.22, 0.28, 0.16, 1.0)
+        _PathColor ("Path / Dirt Trail Color", Color) = (0.38, 0.28, 0.18, 1.0)
         _SlopeThreshold ("Slope Threshold", Range(0.0, 1.0)) = 0.55
         _SlopeSmoothness ("Slope Blend", Range(0.01, 0.5)) = 0.12
         _HeightMin ("Height Min", Float) = 0.0
         _HeightMax ("Height Max", Float) = 40.0
         _LightIntensity ("Light Boost", Range(0.5, 2.0)) = 1.15
+        [HideInInspector] _Control ("Control (RGBA)", 2D) = "red" {}
+        [HideInInspector] _Splat0 ("Layer 0 (Base)", 2D) = "white" {}
+        [HideInInspector] _Splat1 ("Layer 1 (Path)", 2D) = "white" {}
     }
     SubShader
     {
@@ -43,6 +47,7 @@ Shader "Custom/LowPolyTerrain"
             {
                 float4 pos : SV_POSITION;
                 float3 worldPos : TEXCOORD0;
+                float2 uv : TEXCOORD4;
                 LIGHTING_COORDS(1, 2)
                 UNITY_FOG_COORDS(3)
             };
@@ -51,6 +56,8 @@ Shader "Custom/LowPolyTerrain"
             fixed4 _GrassHighColor;
             fixed4 _RockColor;
             fixed4 _SoilColor;
+            fixed4 _PathColor;
+            sampler2D _Control;
             float _SlopeThreshold;
             float _SlopeSmoothness;
             float _HeightMin;
@@ -62,6 +69,7 @@ Shader "Custom/LowPolyTerrain"
                 v2f o;
                 o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
                 o.pos = UnityObjectToClipPos(v.vertex);
+                o.uv = v.texcoord.xy;
                 TRANSFER_VERTEX_TO_FRAGMENT(o);
                 UNITY_TRANSFER_FOG(o, o.pos);
                 return o;
@@ -81,6 +89,11 @@ Shader "Custom/LowPolyTerrain"
                 fixed3 grass = lerp(_GrassColor.rgb, _GrassHighColor.rgb, heightFactor);
                 fixed3 land = lerp(_SoilColor.rgb, grass, smoothstep(0.0, 0.25, heightFactor));
                 fixed3 baseAlbedo = lerp(land, _RockColor.rgb, slopeFactor);
+
+                // Blend painted path/trail from Unity Terrain Splatmap
+                fixed4 splat = tex2D(_Control, i.uv);
+                float pathWeight = saturate(splat.g + splat.b + splat.a);
+                baseAlbedo = lerp(baseAlbedo, _PathColor.rgb, pathWeight);
 
                 float3 lightDir = normalize(_WorldSpaceLightPos0.xyz);
                 float NdotL = max(0.0, dot(flatNormal, lightDir));
