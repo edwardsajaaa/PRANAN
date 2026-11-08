@@ -33,6 +33,8 @@ public class RadioDialogueManager : MonoBehaviour
 
     [Header("Colors & Styling")]
     [SerializeField] private bool useMinimalistStyle = true;
+    [SerializeField] private TMP_FontAsset customFont;
+    [SerializeField] private TMP_FontAsset monologueFont;
     [SerializeField] private Color nadiaColor = new Color(0.35f, 0.85f, 1f, 1f);
     [SerializeField] private Color ranggaColor = new Color(1f, 0.85f, 0.35f, 1f);
     [SerializeField] private Color monologueColor = new Color(0.85f, 0.90f, 0.95f, 0.95f);
@@ -205,6 +207,8 @@ public class RadioDialogueManager : MonoBehaviour
     {
         if (speakerText != null)
         {
+            if (customFont != null) speakerText.font = customFont;
+
             string speakerName = line.speaker;
             if (!string.IsNullOrEmpty(speakerName))
             {
@@ -238,8 +242,17 @@ public class RadioDialogueManager : MonoBehaviour
 
         if (bodyText != null)
         {
-            // Format ala Pamali: Teks bersih tanpa kutip dua kaku di tengah layar
-            bodyText.text = line.isMonologue ? $"<i>{line.text}</i>" : line.text;
+            if (line.isMonologue && monologueFont != null)
+            {
+                bodyText.font = monologueFont;
+                bodyText.text = line.text;
+            }
+            else
+            {
+                if (customFont != null) bodyText.font = customFont;
+                bodyText.text = line.isMonologue ? $"<i>{line.text}</i>" : line.text;
+            }
+
             bodyText.color = (useMinimalistStyle || !line.isMonologue) ? Color.white : monologueColor;
         }
 
@@ -368,6 +381,23 @@ public class RadioDialogueManager : MonoBehaviour
             subtitleCanvasGroup = panel.GetComponent<CanvasGroup>();
             speakerText = panel.Find("SpeakerText")?.GetComponent<TextMeshProUGUI>();
             bodyText = panel.Find("BodyText")?.GetComponent<TextMeshProUGUI>();
+        }
+
+#if UNITY_EDITOR
+        if (customFont == null)
+        {
+            customFont = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Font/FragmentMono-Regular SDF.asset");
+        }
+        if (monologueFont == null)
+        {
+            monologueFont = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Font/FragmentMono-Italic SDF.asset");
+        }
+#endif
+
+        if (customFont != null)
+        {
+            if (speakerText != null) speakerText.font = customFont;
+            if (bodyText != null) bodyText.font = customFont;
         }
 
         if (subtitleCanvasGroup != null)
