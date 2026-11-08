@@ -32,6 +32,7 @@ public class RadioDialogueManager : MonoBehaviour
     [SerializeField] private AudioClip radioStaticSound;
 
     [Header("Colors & Styling")]
+    [SerializeField] private bool useMinimalistStyle = true;
     [SerializeField] private Color nadiaColor = new Color(0.35f, 0.85f, 1f, 1f);
     [SerializeField] private Color ranggaColor = new Color(1f, 0.85f, 0.35f, 1f);
     [SerializeField] private Color monologueColor = new Color(0.85f, 0.90f, 0.95f, 0.95f);
@@ -204,20 +205,42 @@ public class RadioDialogueManager : MonoBehaviour
     {
         if (speakerText != null)
         {
-            speakerText.text = line.speaker;
-
-            if (line.isMonologue)
-                speakerText.color = monologueColor;
-            else if (line.speaker.ToLower().Contains("nadia"))
-                speakerText.color = nadiaColor;
+            string speakerName = line.speaker;
+            if (!string.IsNullOrEmpty(speakerName))
+            {
+                // Format ala Pamali: "Salsa:" / "Rangga:"
+                if (!speakerName.EndsWith(":"))
+                {
+                    speakerName += ":";
+                }
+                speakerText.text = speakerName;
+                speakerText.gameObject.SetActive(true);
+            }
             else
-                speakerText.color = ranggaColor;
+            {
+                speakerText.gameObject.SetActive(false);
+            }
+
+            if (useMinimalistStyle)
+            {
+                speakerText.color = Color.white;
+            }
+            else
+            {
+                if (line.isMonologue)
+                    speakerText.color = monologueColor;
+                else if (line.speaker.ToLower().Contains("nadia"))
+                    speakerText.color = nadiaColor;
+                else
+                    speakerText.color = ranggaColor;
+            }
         }
 
         if (bodyText != null)
         {
-            bodyText.text = line.isMonologue ? $"<i>\"{line.text}\"</i>" : $"\"{line.text}\"";
-            bodyText.color = line.isMonologue ? monologueColor : Color.white;
+            // Format ala Pamali: Teks bersih tanpa kutip dua kaku di tengah layar
+            bodyText.text = line.isMonologue ? $"<i>{line.text}</i>" : line.text;
+            bodyText.color = (useMinimalistStyle || !line.isMonologue) ? Color.white : monologueColor;
         }
 
         Debug.Log($"[RadioDialogue] {line.speaker}: {line.text}");
@@ -266,58 +289,79 @@ public class RadioDialogueManager : MonoBehaviour
             }
         }
 
-        // Panel Subtitle di bagian bawah layar
+        // Panel Subtitle gaya Pamali (Minimalis, di tengah bawah layar tanpa kotak hitam)
         Transform panel = dialogueCanvas.transform.Find("RadioSubtitlePanel");
+        if (panel != null)
+        {
+            // Jika ada panel versi kotak lama, perbarui / hapus agar berganti ke format Pamali
+            if (Application.isPlaying)
+                Destroy(panel.gameObject);
+            else
+                DestroyImmediate(panel.gameObject);
+            panel = null;
+        }
+
         if (panel == null)
         {
             GameObject panelObj = new GameObject("RadioSubtitlePanel");
             panelObj.transform.SetParent(dialogueCanvas.transform, false);
 
             RectTransform rt = panelObj.AddComponent<RectTransform>();
-            // Anchor di tengah bawah layar (lebar 1100px, tinggi 130px)
-            rt.anchorMin = new Vector2(0.5f, 0.05f);
-            rt.anchorMax = new Vector2(0.5f, 0.05f);
-            rt.pivot = new Vector2(0.5f, 0f);
-            rt.sizeDelta = new Vector2(1100f, 130f);
-
-            Image bg = panelObj.AddComponent<Image>();
-            bg.color = new Color(0.04f, 0.05f, 0.07f, 0.88f);
-            backgroundImage = bg;
+            // Anchor di tengah bawah layar (responsif terhadap semua rasio layar)
+            rt.anchorMin = new Vector2(0.12f, 0.08f);
+            rt.anchorMax = new Vector2(0.88f, 0.28f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
 
             subtitleCanvasGroup = panelObj.AddComponent<CanvasGroup>();
             subtitleCanvasGroup.blocksRaycasts = false;
             subtitleCanvasGroup.interactable = false;
             subtitleCanvasGroup.alpha = 0f;
 
-            // Speaker Text (Nama Pembicara)
+            // Speaker Text (Nama Pembicara - di tengah, gaya Pamali)
             GameObject spkObj = new GameObject("SpeakerText");
             spkObj.transform.SetParent(panelObj.transform, false);
             RectTransform spkRt = spkObj.AddComponent<RectTransform>();
-            spkRt.anchorMin = new Vector2(0f, 1f);
+            spkRt.anchorMin = new Vector2(0f, 0.58f);
             spkRt.anchorMax = new Vector2(1f, 1f);
             spkRt.pivot = new Vector2(0.5f, 1f);
-            spkRt.anchoredPosition = new Vector2(0f, -12f);
-            spkRt.sizeDelta = new Vector2(-50f, 32f);
+            spkRt.offsetMin = Vector2.zero;
+            spkRt.offsetMax = Vector2.zero;
 
             speakerText = spkObj.AddComponent<TextMeshProUGUI>();
-            speakerText.fontSize = 21;
-            speakerText.fontStyle = FontStyles.Bold;
-            speakerText.alignment = TextAlignmentOptions.TopLeft;
+            speakerText.fontSize = 25;
+            speakerText.fontStyle = FontStyles.Normal;
+            speakerText.alignment = TextAlignmentOptions.Center;
+            speakerText.color = Color.white;
 
-            // Body Text (Kalimat Dialog)
+            // Efek bayangan halus agar mudah dibaca di latar apapun
+            Shadow spkShadow = spkObj.AddComponent<Shadow>();
+            spkShadow.effectColor = new Color(0f, 0f, 0f, 0.9f);
+            spkShadow.effectDistance = new Vector2(1.8f, -1.8f);
+
+            // Body Text (Teks Dialog - di tengah, gaya Pamali)
             GameObject bodyObj = new GameObject("BodyText");
             bodyObj.transform.SetParent(panelObj.transform, false);
             RectTransform bodyRt = bodyObj.AddComponent<RectTransform>();
             bodyRt.anchorMin = new Vector2(0f, 0f);
-            bodyRt.anchorMax = new Vector2(1f, 1f);
+            bodyRt.anchorMax = new Vector2(1f, 0.58f);
             bodyRt.pivot = new Vector2(0.5f, 0.5f);
-            bodyRt.offsetMin = new Vector2(25f, 12f);
-            bodyRt.offsetMax = new Vector2(-25f, -48f);
+            bodyRt.offsetMin = Vector2.zero;
+            bodyRt.offsetMax = Vector2.zero;
 
             bodyText = bodyObj.AddComponent<TextMeshProUGUI>();
-            bodyText.fontSize = 18;
+            bodyText.fontSize = 27;
+            bodyText.fontStyle = FontStyles.Normal;
             bodyText.enableWordWrapping = true;
-            bodyText.alignment = TextAlignmentOptions.TopLeft;
+            bodyText.alignment = TextAlignmentOptions.Top;
+            bodyText.color = Color.white;
+            bodyText.lineSpacing = 16;
+
+            // Efek bayangan halus
+            Shadow bodyShadow = bodyObj.AddComponent<Shadow>();
+            bodyShadow.effectColor = new Color(0f, 0f, 0f, 0.9f);
+            bodyShadow.effectDistance = new Vector2(2f, -2f);
         }
         else
         {
