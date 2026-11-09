@@ -20,12 +20,11 @@ public class RadioDialogueManager : MonoBehaviour
 {
     public static RadioDialogueManager Instance { get; private set; }
 
-    [Header("UI References (Optional - will auto-create if empty)")]
+    [Header("UI References (Manual Setup)")]
     [SerializeField] private Canvas dialogueCanvas;
     [SerializeField] private CanvasGroup subtitleCanvasGroup;
     [SerializeField] private TextMeshProUGUI speakerText;
     [SerializeField] private TextMeshProUGUI bodyText;
-    [SerializeField] private Image backgroundImage;
 
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
@@ -56,10 +55,10 @@ public class RadioDialogueManager : MonoBehaviour
         }
         Instance = this;
 
-        if (audioSource == null)
-            audioSource = GetComponent<AudioSource>() ?? gameObject.AddComponent<AudioSource>();
-
-        EnsureUIReferences();
+        if (subtitleCanvasGroup != null)
+        {
+            subtitleCanvasGroup.alpha = 0f;
+        }
     }
 
     private void Start()
@@ -170,7 +169,11 @@ public class RadioDialogueManager : MonoBehaviour
 
     public void StartDialogueSequence(List<RadioDialogueLine> lines)
     {
-        EnsureUIReferences();
+        if (subtitleCanvasGroup == null || speakerText == null || bodyText == null)
+        {
+            Debug.LogWarning("[RadioDialogueManager] UI References belum di-assign lengkap di Inspector! Pastikan Subtitle Canvas Group, Speaker Text, dan Body Text sudah ditarik.");
+            return;
+        }
 
         if (activeDialogueRoutine != null)
         {
@@ -271,138 +274,5 @@ public class RadioDialogueManager : MonoBehaviour
             yield return null;
         }
         subtitleCanvasGroup.alpha = toAlpha;
-    }
-
-    private void EnsureUIReferences()
-    {
-        if (subtitleCanvasGroup != null && speakerText != null && bodyText != null)
-            return;
-
-        // Cari atau buat Canvas khusus dialog (Screen Space Overlay)
-        if (dialogueCanvas == null)
-        {
-            GameObject canvasObj = GameObject.Find("RadioDialogueCanvas");
-            if (canvasObj == null)
-            {
-                canvasObj = new GameObject("RadioDialogueCanvas");
-                dialogueCanvas = canvasObj.AddComponent<Canvas>();
-                dialogueCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                dialogueCanvas.sortingOrder = 200; // Selalu di atas UI gameplay lainnya
-
-                CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
-                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                scaler.referenceResolution = new Vector2(1920, 1080);
-                scaler.matchWidthOrHeight = 0.5f;
-
-                canvasObj.AddComponent<GraphicRaycaster>();
-            }
-            else
-            {
-                dialogueCanvas = canvasObj.GetComponent<Canvas>();
-            }
-        }
-
-        // Panel Subtitle gaya Pamali (Minimalis, di tengah bawah layar tanpa kotak hitam)
-        Transform panel = dialogueCanvas.transform.Find("RadioSubtitlePanel");
-        if (panel != null)
-        {
-            // Jika ada panel versi kotak lama, perbarui / hapus agar berganti ke format Pamali
-            if (Application.isPlaying)
-                Destroy(panel.gameObject);
-            else
-                DestroyImmediate(panel.gameObject);
-            panel = null;
-        }
-
-        if (panel == null)
-        {
-            GameObject panelObj = new GameObject("RadioSubtitlePanel");
-            panelObj.transform.SetParent(dialogueCanvas.transform, false);
-
-            RectTransform rt = panelObj.AddComponent<RectTransform>();
-            // Anchor di tengah bawah layar (responsif terhadap semua rasio layar)
-            rt.anchorMin = new Vector2(0.12f, 0.08f);
-            rt.anchorMax = new Vector2(0.88f, 0.28f);
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-
-            subtitleCanvasGroup = panelObj.AddComponent<CanvasGroup>();
-            subtitleCanvasGroup.blocksRaycasts = false;
-            subtitleCanvasGroup.interactable = false;
-            subtitleCanvasGroup.alpha = 0f;
-
-            // Speaker Text (Nama Pembicara - di tengah, gaya Pamali)
-            GameObject spkObj = new GameObject("SpeakerText");
-            spkObj.transform.SetParent(panelObj.transform, false);
-            RectTransform spkRt = spkObj.AddComponent<RectTransform>();
-            spkRt.anchorMin = new Vector2(0f, 0.58f);
-            spkRt.anchorMax = new Vector2(1f, 1f);
-            spkRt.pivot = new Vector2(0.5f, 1f);
-            spkRt.offsetMin = Vector2.zero;
-            spkRt.offsetMax = Vector2.zero;
-
-            speakerText = spkObj.AddComponent<TextMeshProUGUI>();
-            speakerText.fontSize = 25;
-            speakerText.fontStyle = FontStyles.Normal;
-            speakerText.alignment = TextAlignmentOptions.Center;
-            speakerText.color = Color.white;
-
-            // Efek bayangan halus agar mudah dibaca di latar apapun
-            Shadow spkShadow = spkObj.AddComponent<Shadow>();
-            spkShadow.effectColor = new Color(0f, 0f, 0f, 0.9f);
-            spkShadow.effectDistance = new Vector2(1.8f, -1.8f);
-
-            // Body Text (Teks Dialog - di tengah, gaya Pamali)
-            GameObject bodyObj = new GameObject("BodyText");
-            bodyObj.transform.SetParent(panelObj.transform, false);
-            RectTransform bodyRt = bodyObj.AddComponent<RectTransform>();
-            bodyRt.anchorMin = new Vector2(0f, 0f);
-            bodyRt.anchorMax = new Vector2(1f, 0.58f);
-            bodyRt.pivot = new Vector2(0.5f, 0.5f);
-            bodyRt.offsetMin = Vector2.zero;
-            bodyRt.offsetMax = Vector2.zero;
-
-            bodyText = bodyObj.AddComponent<TextMeshProUGUI>();
-            bodyText.fontSize = 27;
-            bodyText.fontStyle = FontStyles.Normal;
-            bodyText.enableWordWrapping = true;
-            bodyText.alignment = TextAlignmentOptions.Top;
-            bodyText.color = Color.white;
-            bodyText.lineSpacing = 16;
-
-            // Efek bayangan halus
-            Shadow bodyShadow = bodyObj.AddComponent<Shadow>();
-            bodyShadow.effectColor = new Color(0f, 0f, 0f, 0.9f);
-            bodyShadow.effectDistance = new Vector2(2f, -2f);
-        }
-        else
-        {
-            subtitleCanvasGroup = panel.GetComponent<CanvasGroup>();
-            speakerText = panel.Find("SpeakerText")?.GetComponent<TextMeshProUGUI>();
-            bodyText = panel.Find("BodyText")?.GetComponent<TextMeshProUGUI>();
-        }
-
-#if UNITY_EDITOR
-        if (customFont == null)
-        {
-            customFont = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Font/FragmentMono-Regular SDF.asset");
-        }
-        if (monologueFont == null)
-        {
-            monologueFont = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Font/FragmentMono-Italic SDF.asset");
-        }
-#endif
-
-        if (customFont != null)
-        {
-            if (speakerText != null) speakerText.font = customFont;
-            if (bodyText != null) bodyText.font = customFont;
-        }
-
-        if (subtitleCanvasGroup != null)
-        {
-            subtitleCanvasGroup.alpha = 0f;
-        }
     }
 }
