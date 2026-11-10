@@ -3,7 +3,57 @@ guid: 1e7df069c7fd7f048b0fbd16b6be346d
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Cabin_WoodPlanks
+    second: {fileID: 2100000, guid: 629adbd4a0247344a9863c64a371d389, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Roof_CorrugatedZinc
+    second: {fileID: 2100000, guid: ec994ccf163bfb644a951ebb713c8d45, type: 2}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: M_Cabin_WoodPlanks_BaseColor
+    second: {fileID: 2800000, guid: e5b9dac229e8008489075e11224a40f6, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: M_Cabin_WoodPlanks_Metallic
+    second: {fileID: 2800000, guid: 796dcd183b1c08042b26311ef1b8804b, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: M_Cabin_WoodPlanks_Normal
+    second: {fileID: 2800000, guid: 1f62cd5dc871fa74ab996b0361c5522d, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: M_Cabin_WoodPlanks_Roughness
+    second: {fileID: 2800000, guid: 5a390413a5a584a4a8d9f5134bf3aff4, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: M_Roof_CorrugatedZinc_BaseColor
+    second: {fileID: 2800000, guid: 1c0a924dfbf7e9946ad07037e5270e8e, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: M_Roof_CorrugatedZinc_Metallic
+    second: {fileID: 2800000, guid: b2f6f38f71f2eae4387d062b8313a8d2, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: M_Roof_CorrugatedZinc_Normal
+    second: {fileID: 2800000, guid: 41bb5a1376ffa204e9d569cefbbe4d34, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: M_Roof_CorrugatedZinc_Roughness
+    second: {fileID: 2800000, guid: c7a92c2be9d0f484aba51af06a78a10c, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0

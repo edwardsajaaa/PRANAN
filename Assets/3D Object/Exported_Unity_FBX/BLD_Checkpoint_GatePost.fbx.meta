@@ -3,7 +3,32 @@ guid: 5d4877382cdb38c4cae6e41945e7b711
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Checkpoint_Gate
+    second: {fileID: 2100000, guid: 97da11d132799eb449f73d5b6c2cdc38, type: 2}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: M_Checkpoint_Gate_BaseColor
+    second: {fileID: 2800000, guid: b3558fc779166cc4b9447e8f53bbc1ec, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: M_Checkpoint_Gate_Metallic
+    second: {fileID: 2800000, guid: a72a9f5843dd9104086f1dcb829a372f, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: M_Checkpoint_Gate_Normal
+    second: {fileID: 2800000, guid: 20aebb2b49c17af47a10de90a6fe453f, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: M_Checkpoint_Gate_Roughness
+    second: {fileID: 2800000, guid: 7dce0a03c9103c64ca41a7aa6151bff3, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0

@@ -3,7 +3,12 @@ guid: 67fcb675988377142b3e1d48425fc855
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Taro_Broadleaf
+    second: {fileID: 2100000, guid: 06f794a979eae444c980e48a54a1139c, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

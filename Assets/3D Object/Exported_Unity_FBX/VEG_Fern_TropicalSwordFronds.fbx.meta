@@ -1,9 +1,14 @@
 fileFormatVersion: 2
-guid: 7e3e60dd54b9af44296ee5c7ca5588d6
+guid: 084d9e04460b4e643bf74979f8159cb6
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Fern_Tropical
+    second: {fileID: 2100000, guid: d23c7ba6db8508c4eace491082aa0f4d, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
