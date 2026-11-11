@@ -34,8 +34,14 @@ public class ClueInspector : MonoBehaviour
     [Header("Zoom Settings")]
     public float zoomSensitivity = 0.5f;
     public float minZoomDistance = 0.8f;
-    public float maxZoomDistance = 6.0f;
+    public float maxZoomDistance = 3.0f;
     public float defaultZoomDistance = 2.5f;
+
+    [Header("Zoom Ratio Limits")]
+    [Tooltip("Batas rasio zoom in terdekat terhadap ukuran ideal (0.45 = bisa perbesar 2.2x lebih dekat)")]
+    public float minZoomRatio = 0.45f;
+    [Tooltip("Batas rasio zoom out terjauh agar objek tetap proporsional & jelas terbaca (default: 1.12x)")]
+    public float maxZoomRatio = 1.12f;
 
     [Header("Transition & Motion Settings")]
     [Tooltip("Durasi animasi gerak halus saat objek masuk ke mode periksa")]
@@ -190,8 +196,8 @@ public class ClueInspector : MonoBehaviour
         float padding = 2.85f;
 
         float idealDist = (maxDim * 0.5f) / Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad) * padding;
-        minZoomDistance = Mathf.Max(0.5f, idealDist * 0.4f);
-        maxZoomDistance = Mathf.Max(minZoomDistance + 1f, idealDist * 2.2f);
+        minZoomDistance = Mathf.Max(0.4f, idealDist * minZoomRatio);
+        maxZoomDistance = idealDist * maxZoomRatio;
         return idealDist;
     }
 
@@ -658,7 +664,7 @@ public class ClueInspector : MonoBehaviour
         Quaternion startRot = Quaternion.Euler(14f, -22f, 3.5f);
         Quaternion endRot = Quaternion.identity;
 
-        float startZoom = targetZoom * 1.30f;
+        float startZoom = targetZoom * Mathf.Min(1.08f, maxZoomRatio);
 
         if (modelHolder != null)
         {
