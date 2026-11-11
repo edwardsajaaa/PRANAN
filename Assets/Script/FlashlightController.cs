@@ -205,3 +205,4 @@ public class FlashlightController : MonoBehaviour
         flickerRoutine = null;
     }
 }
+
