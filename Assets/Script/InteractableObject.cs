@@ -36,10 +36,64 @@ public class InteractableObject : MonoBehaviour
 
     [Header("Monologue / Thought (Pamali / Firewatch)")]
     [Tooltip("Jika diisi, memicu monolog batin Rangga di bawah layar")]
-    [TextArea(2, 4)]
+    [TextArea(3, 6)]
     public string examinationMonologue;
     public bool playMonologueOnInteract = true;
     public bool trigger3DInspection = true;
+
+    [Header("Proximity Monologue (Memicu Saat Mendekat)")]
+    [Tooltip("Jika dicentang, monolog batin otomatis muncul satu kali saat player berjalan mendekati objek ini")]
+    public bool triggerOnApproach = true;
+    [Tooltip("Jarak deteksi pemain mendekati objek (dalam meter)")]
+    public float approachDistance = 4.0f;
+    [Tooltip("Durasi teks monolog tampil di layar (detik)")]
+    public float monologueDuration = 7.5f;
+
+    private bool hasTriggeredApproach = false;
+
+    private void Update()
+    {
+        if (triggerOnApproach && !hasTriggeredApproach && !string.IsNullOrEmpty(examinationMonologue))
+        {
+            CheckApproachTrigger();
+        }
+    }
+
+    private void CheckApproachTrigger()
+    {
+        if (GameStateManager.Instance != null && GameStateManager.Instance.CurrentState != GameState.Exploration)
+        {
+            return;
+        }
+
+        Transform playerTransform = null;
+        if (Camera.main != null)
+        {
+            playerTransform = Camera.main.transform;
+        }
+
+        if (playerTransform != null)
+        {
+            float dist = Vector3.Distance(transform.position, playerTransform.position);
+            if (dist <= approachDistance)
+            {
+                hasTriggeredApproach = true;
+                if (RadioDialogueManager.Instance != null)
+                {
+                    RadioDialogueManager.Instance.ShowMonologue(examinationMonologue, monologueDuration);
+                }
+            }
+        }
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        if (triggerOnApproach)
+        {
+            Gizmos.color = new Color(0.2f, 0.9f, 0.4f, 0.35f);
+            Gizmos.DrawWireSphere(transform.position, approachDistance);
+        }
+    }
 
     [Header("Interaction Settings")]
     [Tooltip("Titik fokus targeting (jika null, menggunakan posisi transform)")]
@@ -80,7 +134,7 @@ public class InteractableObject : MonoBehaviour
         {
             if (RadioDialogueManager.Instance != null)
             {
-                RadioDialogueManager.Instance.ShowMonologue(examinationMonologue);
+                RadioDialogueManager.Instance.ShowMonologue(examinationMonologue, monologueDuration);
             }
         }
 
