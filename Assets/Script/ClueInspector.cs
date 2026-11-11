@@ -37,6 +37,12 @@ public class ClueInspector : MonoBehaviour
     public float maxZoomDistance = 6.0f;
     public float defaultZoomDistance = 2.5f;
 
+    [Header("Transition & Motion Settings")]
+    [Tooltip("Durasi animasi gerak halus saat objek masuk ke mode periksa")]
+    public float entranceDuration = 0.48f;
+    [Tooltip("Durasi animasi transisi saat keluar dari mode periksa")]
+    public float exitDuration = 0.26f;
+
     private InteractableObject activeClue;
     private GameObject spawnedInspectionModel;
     private Transform modelHolder;
@@ -46,6 +52,11 @@ public class ClueInspector : MonoBehaviour
     private float currentZoom;
     private bool isDragging = false;
     private bool isInspecting = false;
+    private bool isTransitioning = false;
+    private bool isClosing = false;
+    private Coroutine activeTransitionCoroutine = null;
+    private readonly Color bgTargetColor = new Color(0.10f, 0.12f, 0.16f, 0.94f);
+
     private Camera cachedMainCamera;
     private UnityEngine.UI.RawImage backgroundRawImage;
     private RenderTexture blurredBackgroundRT;
@@ -69,9 +80,12 @@ public class ClueInspector : MonoBehaviour
         if (!isInspecting) return;
 
         HandleInput();
-        ApplyGyroscopicRotation();
-        HandleZoom();
-        EvaluateHotspots();
+        if (!isTransitioning)
+        {
+            ApplyGyroscopicRotation();
+            HandleZoom();
+            EvaluateHotspots();
+        }
     }
 
     public void StartInspection(InteractableObject clue)
@@ -80,10 +94,13 @@ public class ClueInspector : MonoBehaviour
         EnsureStudioReady();
         activeClue = clue;
         isInspecting = true;
+        isClosing = false;
 
         if (modelHolder != null)
         {
             modelHolder.localRotation = Quaternion.identity;
+            modelHolder.localPosition = Vector3.zero;
+            modelHolder.localScale = Vector3.one;
         }
 
         if (studioPivot != null)
@@ -111,13 +128,19 @@ public class ClueInspector : MonoBehaviour
         SetupInspectionModel(clue);
 
         angularVelocity = Vector2.zero;
-        currentZoom = CalculateIdealZoom(spawnedInspectionModel);
-        UpdateCameraPosition();
+        float targetZoom = CalculateIdealZoom(spawnedInspectionModel);
 
         if (inspectionUI != null)
         {
             inspectionUI.Show(clue);
+            inspectionUI.SetAlpha(0f);
         }
+
+        if (activeTransitionCoroutine != null)
+        {
+            StopCoroutine(activeTransitionCoroutine);
+        }
+        activeTransitionCoroutine = StartCoroutine(EntranceMotionRoutine(targetZoom));
     }
 
     private float CalculateIdealZoom(GameObject targetModel)
@@ -322,6 +345,7 @@ public class ClueInspector : MonoBehaviour
         panelRect.anchorMax = Vector2.one;
         panelRect.offsetMin = Vector2.zero;
         panelRect.offsetMax = Vector2.zero;
+        panel.AddComponent<CanvasGroup>();
 
         InspectionUI ui = canvasObj.AddComponent<InspectionUI>();
         ui.inspectionPanel = panel;
@@ -496,12 +520,13 @@ public class ClueInspector : MonoBehaviour
 
     private void HandleInput()
     {
-
         if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.Escape))
         {
             CloseInspection();
             return;
         }
+
+        if (isTransitioning) return;
 
         if (Input.GetKeyDown(KeyCode.F))
         {
@@ -526,7 +551,6 @@ public class ClueInspector : MonoBehaviour
         }
         else
         {
-
             angularVelocity = Vector2.Lerp(angularVelocity, Vector2.zero, Time.unscaledDeltaTime * dampingRate);
         }
     }
@@ -620,12 +644,112 @@ public class ClueInspector : MonoBehaviour
         }
     }
 
+    private System.Collections.IEnumerator EntranceMotionRoutine(float targetZoom)
+    {
+        isTransitioning = true;
+
+        // Motion masuk: Objek meluncur halus dari bawah-depan, membesar sedikit, dan berotasi halus ke orientasi default
+        Vector3 startPos = new Vector3(0f, -0.32f, 0.35f);
+        Vector3 endPos = Vector3.zero;
+
+        Vector3 startScale = Vector3.one * 0.72f;
+        Vector3 endScale = Vector3.one;
+
+        Quaternion startRot = Quaternion.Euler(14f, -22f, 3.5f);
+        Quaternion endRot = Quaternion.identity;
+
+        float startZoom = targetZoom * 1.30f;
+
+        if (modelHolder != null)
+        {
+            modelHolder.localPosition = startPos;
+            modelHolder.localScale = startScale;
+            modelHolder.localRotation = startRot;
+        }
+
+        currentZoom = startZoom;
+        UpdateCameraPosition();
+
+        Color startBgColor = new Color(0.70f, 0.72f, 0.76f, 0.95f);
+        if (backgroundRawImage != null)
+        {
+            backgroundRawImage.color = startBgColor;
+            backgroundRawImage.gameObject.SetActive(true);
+        }
+
+        if (inspectionUI != null)
+        {
+            inspectionUI.SetAlpha(0f);
+        }
+
+        float elapsed = 0f;
+        while (elapsed < entranceDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / entranceDuration);
+
+            // Ease-out cubic curve: gerakan responsif di awal dan melambat secara lembut saat mendarat
+            float easeOut = 1f - Mathf.Pow(1f - t, 3f);
+
+            if (modelHolder != null)
+            {
+                modelHolder.localPosition = Vector3.Lerp(startPos, endPos, easeOut);
+                modelHolder.localScale = Vector3.Lerp(startScale, endScale, easeOut);
+                modelHolder.localRotation = Quaternion.Slerp(startRot, endRot, easeOut);
+            }
+
+            currentZoom = Mathf.Lerp(startZoom, targetZoom, easeOut);
+            UpdateCameraPosition();
+
+            if (backgroundRawImage != null)
+            {
+                backgroundRawImage.color = Color.Lerp(startBgColor, bgTargetColor, easeOut);
+            }
+
+            if (inspectionUI != null)
+            {
+                // UI memudar masuk sedikit tertunda (delay 15%) agar fokus awal tertuju ke objek 3D
+                float uiProgress = Mathf.Clamp01((t - 0.15f) / 0.85f);
+                float uiEase = 1f - Mathf.Pow(1f - uiProgress, 2f);
+                inspectionUI.SetAlpha(uiEase);
+            }
+
+            yield return null;
+        }
+
+        if (modelHolder != null)
+        {
+            modelHolder.localPosition = endPos;
+            modelHolder.localScale = endScale;
+            modelHolder.localRotation = endRot;
+        }
+        currentZoom = targetZoom;
+        UpdateCameraPosition();
+
+        if (backgroundRawImage != null)
+        {
+            backgroundRawImage.color = bgTargetColor;
+        }
+
+        if (inspectionUI != null)
+        {
+            inspectionUI.SetAlpha(1f);
+        }
+
+        isTransitioning = false;
+        activeTransitionCoroutine = null;
+    }
+
     public void TryCollectActiveClue()
     {
         if (activeClue != null && activeClue.isCollectable)
         {
             InteractableObject clueToCollect = activeClue;
-            CloseInspection();
+            if (activeTransitionCoroutine != null)
+            {
+                StopCoroutine(activeTransitionCoroutine);
+            }
+            FinalizeCloseInspection();
             clueToCollect.Collect();
         }
     }
@@ -647,6 +771,72 @@ public class ClueInspector : MonoBehaviour
 
     public void CloseInspection()
     {
+        if (!isInspecting || isClosing) return;
+
+        if (activeTransitionCoroutine != null)
+        {
+            StopCoroutine(activeTransitionCoroutine);
+        }
+
+        activeTransitionCoroutine = StartCoroutine(ExitMotionRoutine());
+    }
+
+    private System.Collections.IEnumerator ExitMotionRoutine()
+    {
+        isClosing = true;
+        isTransitioning = true;
+
+        Vector3 startPos = modelHolder != null ? modelHolder.localPosition : Vector3.zero;
+        Vector3 endPos = startPos + new Vector3(0f, -0.25f, 0.25f);
+
+        Vector3 startScale = modelHolder != null ? modelHolder.localScale : Vector3.one;
+        Vector3 endScale = startScale * 0.78f;
+
+        float startZoom = currentZoom;
+        float endZoom = currentZoom * 1.15f;
+
+        Color startBgColor = backgroundRawImage != null ? backgroundRawImage.color : bgTargetColor;
+        Color endBgColor = new Color(0.70f, 0.72f, 0.76f, 0f);
+
+        float elapsed = 0f;
+        while (elapsed < exitDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / exitDuration);
+
+            // Ease-in quad curve
+            float easeIn = t * t;
+
+            if (modelHolder != null)
+            {
+                modelHolder.localPosition = Vector3.Lerp(startPos, endPos, easeIn);
+                modelHolder.localScale = Vector3.Lerp(startScale, endScale, easeIn);
+            }
+
+            currentZoom = Mathf.Lerp(startZoom, endZoom, easeIn);
+            UpdateCameraPosition();
+
+            if (backgroundRawImage != null)
+            {
+                backgroundRawImage.color = Color.Lerp(startBgColor, endBgColor, easeIn);
+            }
+
+            if (inspectionUI != null)
+            {
+                inspectionUI.SetAlpha(1f - easeIn);
+            }
+
+            yield return null;
+        }
+
+        FinalizeCloseInspection();
+        isClosing = false;
+        isTransitioning = false;
+        activeTransitionCoroutine = null;
+    }
+
+    private void FinalizeCloseInspection()
+    {
         isInspecting = false;
 
         if (spawnedInspectionModel != null)
@@ -656,6 +846,8 @@ public class ClueInspector : MonoBehaviour
 
         if (modelHolder != null)
         {
+            modelHolder.localPosition = Vector3.zero;
+            modelHolder.localScale = Vector3.one;
             modelHolder.localRotation = Quaternion.identity;
         }
 

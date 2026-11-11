@@ -24,8 +24,12 @@ public class InspectionUI : MonoBehaviour
     public Button collectButton;
     public TextMeshProUGUI collectButtonText;
 
+    private CanvasGroup canvasGroup;
+
     private void Awake()
     {
+        EnsureCanvasGroup();
+
         if (closeButton != null)
         {
             closeButton.onClick.AddListener(OnCloseClicked);
@@ -105,9 +109,33 @@ public class InspectionUI : MonoBehaviour
         UpdateDwellProgress(0f);
     }
 
+    public void EnsureCanvasGroup()
+    {
+        if (inspectionPanel != null && canvasGroup == null)
+        {
+            canvasGroup = inspectionPanel.GetComponent<CanvasGroup>();
+            if (canvasGroup == null)
+            {
+                canvasGroup = inspectionPanel.AddComponent<CanvasGroup>();
+            }
+        }
+    }
+
+    public void SetAlpha(float alpha)
+    {
+        EnsureCanvasGroup();
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = alpha;
+            canvasGroup.interactable = alpha >= 0.85f;
+            canvasGroup.blocksRaycasts = alpha >= 0.85f;
+        }
+    }
+
     public void Hide()
     {
         if (inspectionPanel != null) inspectionPanel.SetActive(false);
+        SetAlpha(1f);
         UpdateDwellProgress(0f);
     }
 
