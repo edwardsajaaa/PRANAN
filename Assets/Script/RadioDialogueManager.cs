@@ -168,6 +168,26 @@ public class RadioDialogueManager : MonoBehaviour
         StartDialogueSequence(new List<RadioDialogueLine> { line });
     }
 
+    /// <summary>
+    /// Menghentikan dan langsung menghilangkan teks dialog/monolog yang sedang aktif di layar.
+    /// </summary>
+    public void DismissDialogueImmediate()
+    {
+        if (activeDialogueRoutine != null)
+        {
+            StopCoroutine(activeDialogueRoutine);
+            activeDialogueRoutine = null;
+        }
+
+        if (subtitleCanvasGroup != null)
+        {
+            subtitleCanvasGroup.alpha = 0f;
+        }
+
+        if (speakerText != null) speakerText.text = "";
+        if (bodyText != null) bodyText.text = "";
+    }
+
     public void StartDialogueSequence(List<RadioDialogueLine> lines)
     {
         if (subtitleCanvasGroup == null || speakerText == null || bodyText == null)

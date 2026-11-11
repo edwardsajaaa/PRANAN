@@ -668,6 +668,11 @@ public class ClueInspector : MonoBehaviour
         if (threePointLightingSetup != null) threePointLightingSetup.SetActive(false);
         if (inspectionUI != null) inspectionUI.Hide();
 
+        if (RadioDialogueManager.Instance != null)
+        {
+            RadioDialogueManager.Instance.DismissDialogueImmediate();
+        }
+
         if (backgroundRawImage != null)
         {
             backgroundRawImage.gameObject.SetActive(false);
