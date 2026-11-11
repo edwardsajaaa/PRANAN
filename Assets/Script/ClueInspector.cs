@@ -39,6 +39,7 @@ public class ClueInspector : MonoBehaviour
 
     private InteractableObject activeClue;
     private GameObject spawnedInspectionModel;
+    private Transform modelHolder;
     private List<AnomalyHotspot> currentHotspots = new List<AnomalyHotspot>();
 
     private Vector2 angularVelocity;
@@ -79,6 +80,11 @@ public class ClueInspector : MonoBehaviour
         EnsureStudioReady();
         activeClue = clue;
         isInspecting = true;
+
+        if (modelHolder != null)
+        {
+            modelHolder.localRotation = Quaternion.identity;
+        }
 
         if (studioPivot != null)
         {
@@ -174,6 +180,15 @@ public class ClueInspector : MonoBehaviour
             pivotObj.transform.SetParent(transform);
             pivotObj.transform.position = new Vector3(0, 1000f, 0);
             studioPivot = pivotObj.transform;
+        }
+
+        if (modelHolder == null)
+        {
+            GameObject holderObj = new GameObject("ModelHolder");
+            holderObj.transform.SetParent(studioPivot);
+            holderObj.transform.localPosition = Vector3.zero;
+            holderObj.transform.localRotation = Quaternion.identity;
+            modelHolder = holderObj.transform;
         }
 
         if (inspectionCamera == null)
@@ -416,13 +431,17 @@ public class ClueInspector : MonoBehaviour
             Destroy(spawnedInspectionModel);
         }
 
-        if (studioPivot != null)
+        if (modelHolder != null)
+        {
+            modelHolder.localRotation = Quaternion.identity;
+        }
+        else if (studioPivot != null)
         {
             studioPivot.rotation = Quaternion.identity;
         }
         currentHotspots.Clear();
 
-        Transform parentTransform = studioPivot != null ? studioPivot : transform;
+        Transform parentTransform = modelHolder != null ? modelHolder : (studioPivot != null ? studioPivot : transform);
 
         GameObject sourceObject = clue.inspectionModelPrefab != null ? clue.inspectionModelPrefab : clue.gameObject;
         spawnedInspectionModel = Instantiate(sourceObject, parentTransform.position, parentTransform.rotation, parentTransform);
@@ -503,7 +522,7 @@ public class ClueInspector : MonoBehaviour
         {
             float mouseX = Input.GetAxis("Mouse X");
             float mouseY = Input.GetAxis("Mouse Y");
-            angularVelocity = new Vector2(mouseX, mouseY) * rotationSpeed;
+            angularVelocity = new Vector2(mouseX, mouseY) * (rotationSpeed * 2.5f);
         }
         else
         {
@@ -514,7 +533,8 @@ public class ClueInspector : MonoBehaviour
 
     private void ApplyGyroscopicRotation()
     {
-        if (studioPivot == null || angularVelocity.sqrMagnitude < 0.0001f) return;
+        Transform targetToRotate = modelHolder != null ? modelHolder : (spawnedInspectionModel != null ? spawnedInspectionModel.transform : null);
+        if (targetToRotate == null || angularVelocity.sqrMagnitude < 0.0001f) return;
 
         Camera cam = inspectionCamera != null ? inspectionCamera : Camera.main;
         if (cam == null) return;
@@ -525,7 +545,7 @@ public class ClueInspector : MonoBehaviour
         Quaternion rotY = Quaternion.AngleAxis(-angularVelocity.x, camUp);
         Quaternion rotX = Quaternion.AngleAxis(angularVelocity.y, camRight);
 
-        studioPivot.rotation = (rotX * rotY) * studioPivot.rotation;
+        targetToRotate.rotation = (rotX * rotY) * targetToRotate.rotation;
     }
 
     private void HandleZoom()
@@ -632,6 +652,11 @@ public class ClueInspector : MonoBehaviour
         if (spawnedInspectionModel != null)
         {
             Destroy(spawnedInspectionModel);
+        }
+
+        if (modelHolder != null)
+        {
+            modelHolder.localRotation = Quaternion.identity;
         }
 
         if (studioPivot != null)
