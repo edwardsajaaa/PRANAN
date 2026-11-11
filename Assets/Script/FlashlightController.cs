@@ -22,8 +22,8 @@ public class FlashlightController : MonoBehaviour
     [Tooltip("Tombol keyboard untuk menyalakan/mematikan senter (Default: F)")]
     [SerializeField] private KeyCode toggleKey = KeyCode.F;
 
-    [Tooltip("Apakah senter menyala saat game baru dimulai")]
-    [SerializeField] private bool startsOn = true;
+    [Tooltip("Apakah senter menyala saat game baru dimulai (default: mati/false)")]
+    [SerializeField] private bool startsOn = false;
 
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
