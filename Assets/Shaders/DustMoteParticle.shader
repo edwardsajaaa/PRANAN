@@ -2,11 +2,11 @@ Shader "PRANAN/DustMoteParticle"
 {
     Properties
     {
-        _BaseColor ("Base Spore Color", Color) = (0.9, 0.95, 1.0, 0.3)
-        _LitColor ("Flashlight Lit Color", Color) = (1.0, 0.98, 0.85, 1.0)
-        _AmbientIntensity ("Ambient Intensity", Range(0.01, 1.0)) = 0.15
-        _ShimmerSpeed ("Shimmer Frequency", Float) = 3.0
-        _DepthFadeDistance ("Soft Depth Fade Distance", Range(0.05, 2.0)) = 0.5
+        _BaseColor ("Base Spore Color", Color) = (0.75, 0.85, 0.95, 0.25)
+        _LitColor ("Flashlight Lit Color", Color) = (1.0, 0.95, 0.75, 1.0)
+        _AmbientIntensity ("Ambient Intensity", Range(0.01, 1.0)) = 0.18
+        _ShimmerSpeed ("Shimmer Frequency", Float) = 2.5
+        _DepthFadeDistance ("Soft Depth Fade Distance", Range(0.05, 2.0)) = 0.4
     }
 
     SubShader
@@ -18,7 +18,7 @@ Shader "PRANAN/DustMoteParticle"
             "RenderType" = "Transparent" 
         }
 
-        Blend SrcAlpha One
+        Blend One One
         Cull Off
         Lighting Off
         ZWrite Off
@@ -28,7 +28,6 @@ Shader "PRANAN/DustMoteParticle"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #pragma multi_compile_particles
             #include "UnityCG.cginc"
 
             sampler2D_float _CameraDepthTexture;
@@ -39,7 +38,6 @@ Shader "PRANAN/DustMoteParticle"
             float _ShimmerSpeed;
             float _DepthFadeDistance;
 
-            // Flashlight Controller uniforms
             float4 _FlashlightPos;
             float4 _FlashlightForward;
             float _FlashlightCosInner;
@@ -76,42 +74,40 @@ Shader "PRANAN/DustMoteParticle"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                // 1. Procedural Soft Circular Disc
+                // Lingkaran bulat lembut (anti-aliased soft circular disc)
                 float2 centeredUV = (i.uv - 0.5) * 2.0;
-                float distFromCenter = length(centeredUV);
-                if (distFromCenter > 1.0) discard;
+                float distSq = dot(centeredUV, centeredUV);
+                if (distSq > 1.0) discard;
 
-                // Soft circular falloff dengan hotspot terang di tengah
-                float circleAlpha = saturate(1.0 - distFromCenter);
-                circleAlpha = pow(circleAlpha, 1.8);
+                float circleGlow = saturate(1.0 - distSq);
+                circleGlow = circleGlow * circleGlow;
 
-                // 2. Shimmer & Glint berdenyut halus acak
-                float shimmer = 0.75 + 0.25 * sin(i.worldPos.x * 12.0 + i.worldPos.y * 7.0 + _Time.y * _ShimmerSpeed);
+                // Shimmering micro particles
+                float shimmer = 0.8 + 0.2 * sin(i.worldPos.x * 10.0 + i.worldPos.y * 6.0 + _Time.y * _ShimmerSpeed);
 
-                // 3. Deteksi pencahayaan kerucut FlashlightController
+                // Flashlight detection
                 float flashLit = 0.0;
                 if (_FlashlightActive > 0.01)
                 {
                     float3 toPart = i.worldPos - _FlashlightPos.xyz;
-                    float distToFlash = length(toPart);
-                    if (distToFlash < _FlashlightRange && distToFlash > 0.05)
+                    float dist = length(toPart);
+                    if (dist < _FlashlightRange && dist > 0.05)
                     {
-                        float3 dir = toPart / distToFlash;
+                        float3 dir = toPart / dist;
                         float cosAng = dot(dir, _FlashlightForward.xyz);
 
                         float spotAtten = smoothstep(_FlashlightCosOuter, _FlashlightCosInner, cosAng);
-                        float distAtten = saturate(1.0 - (distToFlash / max(1.0, _FlashlightRange)));
+                        float distAtten = saturate(1.0 - (dist / max(1.0, _FlashlightRange)));
                         distAtten = pow(distAtten, 1.2);
 
-                        // Pantulan berkilau (glint) saat partikel berada tepat di sorot senter
                         float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
-                        float specularGlint = pow(saturate(dot(reflect(-dir, float3(0, 1, 0)), viewDir)), 3.0);
+                        float glint = pow(saturate(dot(reflect(-dir, float3(0, 1, 0)), viewDir)), 4.0);
 
-                        flashLit = spotAtten * distAtten * (3.8 + specularGlint * 2.5);
+                        flashLit = spotAtten * distAtten * (3.5 + glint * 2.5);
                     }
                 }
 
-                // 4. Soft Depth Fade
+                // Depth fade
                 float depthFade = 1.0;
                 #if defined(UNITY_REVERSED_Z)
                 float rawDepth = tex2Dproj(_CameraDepthTexture, UNITY_PROJ_COORD(i.screenPos)).r;
@@ -125,17 +121,14 @@ Shader "PRANAN/DustMoteParticle"
                     depthFade = saturate((sceneEyeDepth - partEyeDepth) / max(0.01, _DepthFadeDistance));
                 }
 
-                // Warna gabungan: ambient di tempat gelap, memantulkan cahaya benderang saat kena sorot senter
                 fixed4 finalColor = lerp(_BaseColor, _LitColor, saturate(flashLit));
-                float totalIntensity = (_AmbientIntensity + flashLit) * shimmer * depthFade * i.color.a;
+                float intensity = (_AmbientIntensity * _BaseColor.a + flashLit) * shimmer * depthFade * i.color.a * circleGlow;
 
-                fixed3 rgb = finalColor.rgb * totalIntensity;
-                float alpha = circleAlpha * finalColor.a * saturate(totalIntensity);
-
-                return fixed4(rgb, alpha);
+                fixed3 rgb = finalColor.rgb * intensity;
+                return fixed4(rgb, 1.0);
             }
             ENDCG
         }
     }
-    FallBack Off
+    FallBack "Particles/Standard Unlit"
 }

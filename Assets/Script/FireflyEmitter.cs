@@ -10,6 +10,7 @@ public enum FireflyBehaviorMode
 /// Menghasilkan partikel serangga / kunang-kunang malam bercahaya kuning-kehijauan.
 /// Dapat ditaruh di semak-semak hutan atau diatur agar mengerumuni lampu bohlam pos jaga.
 /// </summary>
+[ExecuteAlways]
 [RequireComponent(typeof(ParticleSystem))]
 public class FireflyEmitter : MonoBehaviour
 {
@@ -32,18 +33,41 @@ public class FireflyEmitter : MonoBehaviour
 
     [Header("Bioluminescence (Cahaya Kunang-kunang)")]
     [SerializeField] private Color glowColor = new Color(0.78f, 0.98f, 0.28f, 1.0f); // Kuning-kehijauan
-    [SerializeField] private float minSize = 0.05f;
-    [SerializeField] private float maxSize = 0.09f;
+    [SerializeField] private float minSize = 0.04f;
+    [SerializeField] private float maxSize = 0.08f;
     [SerializeField] private float blinkSpeed = 2.4f;
+
+    [Header("Material")]
+    [SerializeField] private Material customMaterial;
 
     private ParticleSystem ps;
     private ParticleSystemRenderer psRenderer;
-    private Material fireflyMaterial;
+    private Material activeMaterial;
 
     private void Awake()
     {
-        ps = GetComponent<ParticleSystem>();
-        psRenderer = GetComponent<ParticleSystemRenderer>();
+        Initialize();
+    }
+
+    private void OnEnable()
+    {
+        Initialize();
+    }
+
+    private void Reset()
+    {
+        Initialize();
+    }
+
+    private void OnValidate()
+    {
+        Initialize();
+    }
+
+    private void Initialize()
+    {
+        if (ps == null) ps = GetComponent<ParticleSystem>();
+        if (psRenderer == null) psRenderer = GetComponent<ParticleSystemRenderer>();
 
         SetupFireflyMaterial();
         ConfigureParticleSystem();
@@ -51,20 +75,44 @@ public class FireflyEmitter : MonoBehaviour
 
     private void SetupFireflyMaterial()
     {
-        Shader shader = Shader.Find("PRANAN/SoftGlowParticle");
-        if (shader != null)
+        if (psRenderer == null) return;
+
+        if (customMaterial != null)
         {
-            fireflyMaterial = new Material(shader);
-            fireflyMaterial.name = "M_FireflyGlow";
-            fireflyMaterial.SetColor("_Color", glowColor);
-            fireflyMaterial.SetFloat("_PulseSpeed", blinkSpeed);
-            fireflyMaterial.SetFloat("_PulseAmount", 0.55f);
-            psRenderer.sharedMaterial = fireflyMaterial;
+            activeMaterial = customMaterial;
+            psRenderer.sharedMaterial = activeMaterial;
+            return;
+        }
+
+        if (activeMaterial == null)
+        {
+#if UNITY_EDITOR
+            activeMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/M_FireflyGlow.mat");
+#endif
+            if (activeMaterial == null)
+            {
+                Shader shader = Shader.Find("PRANAN/SoftGlowParticle");
+                if (shader != null)
+                {
+                    activeMaterial = new Material(shader);
+                    activeMaterial.name = "M_FireflyGlow";
+                }
+            }
+        }
+
+        if (activeMaterial != null)
+        {
+            activeMaterial.SetColor("_Color", glowColor);
+            activeMaterial.SetFloat("_PulseSpeed", blinkSpeed);
+            activeMaterial.SetFloat("_PulseAmount", 0.55f);
+            psRenderer.sharedMaterial = activeMaterial;
         }
     }
 
     private void ConfigureParticleSystem()
     {
+        if (ps == null) return;
+
         var main = ps.main;
         main.maxParticles = fireflyCount;
         main.startLifetime = 14f;
@@ -81,7 +129,6 @@ public class FireflyEmitter : MonoBehaviour
         shape.shapeType = ParticleSystemShapeType.Sphere;
         shape.radius = areaRadius;
 
-        // Turbulence untuk gerakan meliuk-liuk alami seperti serangga hidup
         var noise = ps.noise;
         noise.enabled = true;
         noise.strength = 0.65f;
@@ -98,15 +145,17 @@ public class FireflyEmitter : MonoBehaviour
         );
         colorOverLifetime.color = grad;
 
-        psRenderer.renderMode = ParticleSystemRenderMode.Billboard;
-        psRenderer.sortMode = ParticleSystemSortMode.Distance;
+        if (psRenderer != null)
+        {
+            psRenderer.renderMode = ParticleSystemRenderMode.Billboard;
+            psRenderer.sortMode = ParticleSystemSortMode.Distance;
+        }
     }
 
     private void Update()
     {
         if (mode == FireflyBehaviorMode.AttractedToLight && lightTarget != null)
         {
-            // Emitter mengikuti posisi lampu gantung
             transform.position = lightTarget.position;
         }
     }

@@ -5,6 +5,7 @@ using UnityEngine;
 /// Partikel melayang lembut di udara dan secara otomatis memantulkan kilauan cahaya (glint/shimmer)
 /// saat terkena sorotan kerucut lampu senter dari FlashlightController.
 /// </summary>
+[ExecuteAlways]
 [RequireComponent(typeof(ParticleSystem))]
 public class AmbientDustMotes : MonoBehaviour
 {
@@ -16,13 +17,16 @@ public class AmbientDustMotes : MonoBehaviour
     [SerializeField] private int maxParticles = 140;
 
     [Tooltip("Kecepatan melayang partikel di udara (Brownian drift)")]
-    [SerializeField] private float driftSpeed = 0.22f;
+    [SerializeField] private float driftSpeed = 0.18f;
 
-    [Header("Visual & Ukuran")]
-    [SerializeField] private float minParticleSize = 0.02f;
-    [SerializeField] private float maxParticleSize = 0.05f;
-    [SerializeField] private Color baseAmbientColor = new Color(0.85f, 0.92f, 1.0f, 0.28f);
-    [SerializeField] private Color flashlightLitColor = new Color(1.0f, 0.98f, 0.82f, 1.0f);
+    [Header("Visual & Ukuran Mikro")]
+    [SerializeField] private float minParticleSize = 0.015f;
+    [SerializeField] private float maxParticleSize = 0.038f;
+    [SerializeField] private Color baseAmbientColor = new Color(0.75f, 0.85f, 0.95f, 0.25f);
+    [SerializeField] private Color flashlightLitColor = new Color(1.0f, 0.95f, 0.75f, 1.0f);
+
+    [Header("Material")]
+    [SerializeField] private Material customMaterial;
 
     [Header("Senter (Flashlight Integration)")]
     [Tooltip("Referensi ke FlashlightController. Jika kosong, script akan mencarinya otomatis.")]
@@ -30,7 +34,7 @@ public class AmbientDustMotes : MonoBehaviour
 
     private ParticleSystem ps;
     private ParticleSystemRenderer psRenderer;
-    private Material dustMaterial;
+    private Material activeMaterial;
     private Transform targetFollow;
 
     private static readonly int FlashlightPosProp = Shader.PropertyToID("_FlashlightPos");
@@ -44,8 +48,28 @@ public class AmbientDustMotes : MonoBehaviour
 
     private void Awake()
     {
-        ps = GetComponent<ParticleSystem>();
-        psRenderer = GetComponent<ParticleSystemRenderer>();
+        Initialize();
+    }
+
+    private void OnEnable()
+    {
+        Initialize();
+    }
+
+    private void Reset()
+    {
+        Initialize();
+    }
+
+    private void OnValidate()
+    {
+        Initialize();
+    }
+
+    private void Initialize()
+    {
+        if (ps == null) ps = GetComponent<ParticleSystem>();
+        if (psRenderer == null) psRenderer = GetComponent<ParticleSystemRenderer>();
 
         SetupDustMaterial();
         ConfigureParticleSystem();
@@ -53,10 +77,13 @@ public class AmbientDustMotes : MonoBehaviour
 
     private void Start()
     {
-        FindPlayerOrCamera();
-        if (flashlight == null)
+        if (Application.isPlaying)
         {
-            flashlight = FindObjectOfType<FlashlightController>();
+            FindPlayerOrCamera();
+            if (flashlight == null)
+            {
+                flashlight = FindObjectOfType<FlashlightController>();
+            }
         }
     }
 
@@ -75,19 +102,44 @@ public class AmbientDustMotes : MonoBehaviour
 
     private void SetupDustMaterial()
     {
-        Shader shader = Shader.Find("PRANAN/DustMoteParticle");
-        if (shader != null)
+        if (psRenderer == null) return;
+
+        if (customMaterial != null)
         {
-            dustMaterial = new Material(shader);
-            dustMaterial.name = "M_AmbientDustMotes";
-            dustMaterial.SetColor(BaseColorProp, baseAmbientColor);
-            dustMaterial.SetColor(LitColorProp, flashlightLitColor);
-            psRenderer.sharedMaterial = dustMaterial;
+            activeMaterial = customMaterial;
+            psRenderer.sharedMaterial = activeMaterial;
+            return;
+        }
+
+        // Cari material permanen M_AmbientDustMotes di project
+        if (activeMaterial == null)
+        {
+#if UNITY_EDITOR
+            activeMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/M_AmbientDustMotes.mat");
+#endif
+            if (activeMaterial == null)
+            {
+                Shader shader = Shader.Find("PRANAN/DustMoteParticle");
+                if (shader != null)
+                {
+                    activeMaterial = new Material(shader);
+                    activeMaterial.name = "M_AmbientDustMotes";
+                }
+            }
+        }
+
+        if (activeMaterial != null)
+        {
+            activeMaterial.SetColor(BaseColorProp, baseAmbientColor);
+            activeMaterial.SetColor(LitColorProp, flashlightLitColor);
+            psRenderer.sharedMaterial = activeMaterial;
         }
     }
 
     private void ConfigureParticleSystem()
     {
+        if (ps == null) return;
+
         var main = ps.main;
         main.maxParticles = maxParticles;
         main.startLifetime = 12f;
@@ -120,27 +172,31 @@ public class AmbientDustMotes : MonoBehaviour
         );
         colorOverLifetime.color = grad;
 
-        psRenderer.renderMode = ParticleSystemRenderMode.Billboard;
-        psRenderer.sortMode = ParticleSystemSortMode.Distance;
+        if (psRenderer != null)
+        {
+            psRenderer.renderMode = ParticleSystemRenderMode.Billboard;
+            psRenderer.sortMode = ParticleSystemSortMode.Distance;
+        }
     }
 
     private void Update()
     {
-        if (targetFollow == null)
+        if (Application.isPlaying)
         {
-            FindPlayerOrCamera();
-            if (targetFollow == null) return;
+            if (targetFollow == null)
+            {
+                FindPlayerOrCamera();
+                if (targetFollow == null) return;
+            }
+
+            transform.position = targetFollow.position;
+            UpdateFlashlightUniforms();
         }
-
-        // Pindahkan posisi emitter mengikuti player tanpa memindahkan partikel world-space yang sedang melayang
-        transform.position = targetFollow.position;
-
-        UpdateFlashlightUniforms();
     }
 
     private void UpdateFlashlightUniforms()
     {
-        if (dustMaterial == null) return;
+        if (activeMaterial == null) return;
 
         bool active = false;
         Vector3 pos = Vector3.zero;
@@ -164,12 +220,12 @@ public class AmbientDustMotes : MonoBehaviour
             }
         }
 
-        dustMaterial.SetVector(FlashlightPosProp, pos);
-        dustMaterial.SetVector(FlashlightForwardProp, forward);
-        dustMaterial.SetFloat(FlashlightCosInnerProp, cosInner);
-        dustMaterial.SetFloat(FlashlightCosOuterProp, cosOuter);
-        dustMaterial.SetFloat(FlashlightRangeProp, range);
-        dustMaterial.SetFloat(FlashlightActiveProp, active ? 1.0f : 0.0f);
+        activeMaterial.SetVector(FlashlightPosProp, pos);
+        activeMaterial.SetVector(FlashlightForwardProp, forward);
+        activeMaterial.SetFloat(FlashlightCosInnerProp, cosInner);
+        activeMaterial.SetFloat(FlashlightCosOuterProp, cosOuter);
+        activeMaterial.SetFloat(FlashlightRangeProp, range);
+        activeMaterial.SetFloat(FlashlightActiveProp, active ? 1.0f : 0.0f);
     }
 
     private void OnDrawGizmosSelected()
