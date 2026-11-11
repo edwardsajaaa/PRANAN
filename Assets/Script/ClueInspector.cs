@@ -80,14 +80,17 @@ public class ClueInspector : MonoBehaviour
         activeClue = clue;
         isInspecting = true;
 
+        if (studioPivot != null)
+        {
+            studioPivot.rotation = Quaternion.identity;
+        }
+
         if (GameStateManager.Instance != null)
         {
             GameStateManager.Instance.SetState(GameState.Inspection);
         }
 
-        if (inspectionCamera != null) inspectionCamera.gameObject.SetActive(true);
-        if (threePointLightingSetup != null) threePointLightingSetup.SetActive(true);
-
+        // Tangkap latar belakang alami game sebelum lampu studio dinyalakan agar tidak silau/terlalu terang
         CaptureBlurredBackground();
 
         if (Camera.main != null && Camera.main != inspectionCamera)
@@ -95,6 +98,9 @@ public class ClueInspector : MonoBehaviour
             cachedMainCamera = Camera.main;
             cachedMainCamera.gameObject.SetActive(false);
         }
+
+        if (inspectionCamera != null) inspectionCamera.gameObject.SetActive(true);
+        if (threePointLightingSetup != null) threePointLightingSetup.SetActive(true);
 
         SetupInspectionModel(clue);
 
@@ -205,7 +211,8 @@ public class ClueInspector : MonoBehaviour
 
             backgroundRawImage = bgImageObj.AddComponent<UnityEngine.UI.RawImage>();
 
-            backgroundRawImage.color = new Color(0.45f, 0.48f, 0.52f, 0.88f);
+            // Warna latar belakang redup/gelap agar serasi dengan suasana sore hutan dan tidak silau
+            backgroundRawImage.color = new Color(0.10f, 0.12f, 0.16f, 0.94f);
         }
 
         if (threePointLightingSetup == null)
@@ -408,6 +415,11 @@ public class ClueInspector : MonoBehaviour
         {
             Destroy(spawnedInspectionModel);
         }
+
+        if (studioPivot != null)
+        {
+            studioPivot.rotation = Quaternion.identity;
+        }
         currentHotspots.Clear();
 
         Transform parentTransform = studioPivot != null ? studioPivot : transform;
@@ -416,6 +428,28 @@ public class ClueInspector : MonoBehaviour
         spawnedInspectionModel = Instantiate(sourceObject, parentTransform.position, parentTransform.rotation, parentTransform);
         spawnedInspectionModel.transform.localPosition = Vector3.zero;
         spawnedInspectionModel.transform.localRotation = Quaternion.identity;
+
+        // Pusatkan model secara otomatis agar titik putar (pivot) tepat berada di tengah objek (bukan di kaki tiang tanah)
+        Renderer[] renderers = spawnedInspectionModel.GetComponentsInChildren<Renderer>();
+        if (renderers.Length > 0)
+        {
+            Bounds combinedBounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++)
+            {
+                if (renderers[i] is ParticleSystemRenderer) continue;
+                combinedBounds.Encapsulate(renderers[i].bounds);
+            }
+
+            Vector3 targetCenter = combinedBounds.center;
+            if (clue.targetPivot != null)
+            {
+                Vector3 localPivot = clue.transform.InverseTransformPoint(clue.targetPivot.position);
+                targetCenter = spawnedInspectionModel.transform.TransformPoint(localPivot);
+            }
+
+            Vector3 centerOffset = targetCenter - parentTransform.position;
+            spawnedInspectionModel.transform.position = parentTransform.position - centerOffset;
+        }
 
         var rigidbodies = spawnedInspectionModel.GetComponentsInChildren<Rigidbody>();
         foreach (var rb in rigidbodies)
@@ -480,7 +514,7 @@ public class ClueInspector : MonoBehaviour
 
     private void ApplyGyroscopicRotation()
     {
-        if (spawnedInspectionModel == null || angularVelocity.sqrMagnitude < 0.0001f) return;
+        if (studioPivot == null || angularVelocity.sqrMagnitude < 0.0001f) return;
 
         Camera cam = inspectionCamera != null ? inspectionCamera : Camera.main;
         if (cam == null) return;
@@ -491,7 +525,7 @@ public class ClueInspector : MonoBehaviour
         Quaternion rotY = Quaternion.AngleAxis(-angularVelocity.x, camUp);
         Quaternion rotX = Quaternion.AngleAxis(angularVelocity.y, camRight);
 
-        spawnedInspectionModel.transform.rotation = (rotX * rotY) * spawnedInspectionModel.transform.rotation;
+        studioPivot.rotation = (rotX * rotY) * studioPivot.rotation;
     }
 
     private void HandleZoom()
@@ -598,6 +632,11 @@ public class ClueInspector : MonoBehaviour
         if (spawnedInspectionModel != null)
         {
             Destroy(spawnedInspectionModel);
+        }
+
+        if (studioPivot != null)
+        {
+            studioPivot.rotation = Quaternion.identity;
         }
 
         if (inspectionCamera != null) inspectionCamera.gameObject.SetActive(false);
