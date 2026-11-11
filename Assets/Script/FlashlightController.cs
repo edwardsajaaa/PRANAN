@@ -4,6 +4,8 @@ using UnityEngine;
 /// <summary>
 /// Mengontrol senter (flashlight) bergaya first-person investigative/horror (Pamali/Outlast):
 /// - Spot light dengan hotspot tengah terang dan lingkar luar memudar alami
+/// - Berkas volumetrik (volumetric cone beam) yang membelah kabut dan debu hutan
+/// - Reaktif terhadap FogZone: Berkas cahaya semakin tebal dan padat saat berada di dalam kabut
 /// - Viewmodel 3D senter di sudut kanan bawah layar
 /// - Efek ayunan kamera (lag/sway) saat menoleh agar terasa realistis di tangan
 /// - Efek bobbing halus saat karakter melangkah
@@ -24,6 +26,14 @@ public class FlashlightController : MonoBehaviour
 
     [Tooltip("Apakah senter menyala saat game baru dimulai (default: mati/false)")]
     [SerializeField] private bool startsOn = false;
+
+    [Header("Volumetric Beam (Cahaya Menembus Kabut)")]
+    [Tooltip("Aktifkan berkas cahaya volumetrik pada senter")]
+    [SerializeField] private bool enableVolumetricBeam = true;
+    [Range(0f, 3f)]
+    [SerializeField] private float beamIntensity = 0.55f;
+    [SerializeField] private float beamLength = 22f;
+    [SerializeField] private Color beamColor = new Color(0.95f, 0.97f, 1f, 0.40f);
 
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
@@ -58,6 +68,16 @@ public class FlashlightController : MonoBehaviour
     private float bobTimer = 0f;
     private Coroutine flickerRoutine;
 
+    // Volumetric Cone Runtime Elements
+    private GameObject beamObject;
+    private MeshRenderer beamRenderer;
+    private MaterialPropertyBlock beamPropertyBlock;
+    private float currentBeamFade = 0f;
+
+    private static readonly int ColorProp = Shader.PropertyToID("_Color");
+    private static readonly int IntensityProp = Shader.PropertyToID("_Intensity");
+    private static readonly int FogMultiplierProp = Shader.PropertyToID("_FogMultiplier");
+
     private void Awake()
     {
         initialLocalRotation = transform.localRotation;
@@ -74,11 +94,24 @@ public class FlashlightController : MonoBehaviour
         }
 
         ApplyLightPreset();
+        SetupVolumetricBeam();
+    }
+
+    private void OnEnable()
+    {
+        FogZone.OnVolumetricMultiplierChanged += HandleFogMultiplierChanged;
+    }
+
+    private void OnDisable()
+    {
+        FogZone.OnVolumetricMultiplierChanged -= HandleFogMultiplierChanged;
     }
 
     private void Start()
     {
         SetFlashlightState(startsOn, playSound: false);
+        currentBeamFade = startsOn ? 1f : 0f;
+        UpdateBeamProperties();
     }
 
     private void Update()
@@ -94,6 +127,8 @@ public class FlashlightController : MonoBehaviour
         {
             UpdateBobbing();
         }
+
+        UpdateVolumetricBeamAnimation();
     }
 
     private void HandleInput()
@@ -120,8 +155,6 @@ public class FlashlightController : MonoBehaviour
 
         if (flashlightModel != null)
         {
-            // Model senter bisa tetap terlihat atau disembunyikan sesuai kebutuhan
-            // Biasanya di game first person, modelnya tetap ada di tangan
             flashlightModel.SetActive(true);
         }
 
@@ -135,9 +168,159 @@ public class FlashlightController : MonoBehaviour
         }
     }
 
+    private void SetupVolumetricBeam()
+    {
+        if (!enableVolumetricBeam) return;
+
+        Transform parentTransform = flashlightLight != null ? flashlightLight.transform : transform;
+
+        // Cari atau buat objek beam anak
+        Transform existing = parentTransform.Find("FlashlightVolumetricBeam");
+        if (existing != null)
+        {
+            beamObject = existing.gameObject;
+        }
+        else
+        {
+            beamObject = new GameObject("FlashlightVolumetricBeam");
+            beamObject.transform.SetParent(parentTransform, false);
+            beamObject.transform.localPosition = Vector3.zero;
+            beamObject.transform.localRotation = Quaternion.identity;
+        }
+
+        MeshFilter mf = beamObject.GetComponent<MeshFilter>();
+        if (mf == null) mf = beamObject.AddComponent<MeshFilter>();
+
+        beamRenderer = beamObject.GetComponent<MeshRenderer>();
+        if (beamRenderer == null) beamRenderer = beamObject.AddComponent<MeshRenderer>();
+
+        Shader beamShader = Shader.Find("PRANAN/VolumetricLightBeam");
+        if (beamShader != null)
+        {
+            Material mat = new Material(beamShader);
+            mat.name = "M_FlashlightBeam";
+            beamRenderer.sharedMaterial = mat;
+        }
+
+        beamRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        beamRenderer.receiveShadows = false;
+        beamRenderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+
+        // Bangun cone mesh senter
+        mf.sharedMesh = GenerateFlashlightConeMesh(defaultSpotAngle, beamLength, 16);
+
+        beamPropertyBlock = new MaterialPropertyBlock();
+
+        Camera mainCam = Camera.main;
+        if (mainCam != null)
+        {
+            mainCam.depthTextureMode |= DepthTextureMode.Depth;
+        }
+    }
+
+    private Mesh GenerateFlashlightConeMesh(float angleDegrees, float length, int segments)
+    {
+        Mesh mesh = new Mesh();
+        mesh.name = "FlashlightConeMesh";
+
+        float radius = length * Mathf.Tan(angleDegrees * 0.5f * Mathf.Deg2Rad);
+        float topRadius = 0.04f; // Pangkal lensa senter
+
+        int vertCount = (segments + 1) * 2;
+        Vector3[] vertices = new Vector3[vertCount];
+        Vector3[] normals = new Vector3[vertCount];
+        Vector2[] uvs = new Vector2[vertCount];
+
+        float angleStep = (2f * Mathf.PI) / segments;
+
+        for (int i = 0; i <= segments; i++)
+        {
+            float a = i * angleStep;
+            float cos = Mathf.Cos(a);
+            float sin = Mathf.Sin(a);
+
+            // Ring pangkal dekat lensa senter (Z = 0.05f)
+            int topIdx = i;
+            vertices[topIdx] = new Vector3(cos * topRadius, sin * topRadius, 0.05f);
+            normals[topIdx] = new Vector3(cos, sin, 0f).normalized;
+            uvs[topIdx] = new Vector2(0f, 0f);
+
+            // Ring ujung beam jauh
+            int botIdx = (segments + 1) + i;
+            vertices[botIdx] = new Vector3(cos * radius, sin * radius, length);
+            normals[botIdx] = new Vector3(cos, sin, 0f).normalized;
+            uvs[botIdx] = new Vector2(1f, 1f);
+        }
+
+        int[] triangles = new int[segments * 6];
+        int triIndex = 0;
+
+        for (int i = 0; i < segments; i++)
+        {
+            int topA = i;
+            int topB = i + 1;
+            int botA = (segments + 1) + i;
+            int botB = (segments + 1) + i + 1;
+
+            triangles[triIndex++] = topA;
+            triangles[triIndex++] = botA;
+            triangles[triIndex++] = topB;
+
+            triangles[triIndex++] = topB;
+            triangles[triIndex++] = botA;
+            triangles[triIndex++] = botB;
+        }
+
+        mesh.vertices = vertices;
+        mesh.normals = normals;
+        mesh.uv = uvs;
+        mesh.triangles = triangles;
+        mesh.RecalculateBounds();
+
+        return mesh;
+    }
+
+    private void UpdateVolumetricBeamAnimation()
+    {
+        if (beamRenderer == null) return;
+
+        float targetFade = (IsOn && (flashlightLight == null || flashlightLight.enabled)) ? 1f : 0f;
+        currentBeamFade = Mathf.MoveTowards(currentBeamFade, targetFade, Time.deltaTime * 6.5f);
+
+        bool shouldRender = currentBeamFade > 0.001f;
+        if (beamRenderer.enabled != shouldRender)
+        {
+            beamRenderer.enabled = shouldRender;
+        }
+
+        if (shouldRender)
+        {
+            UpdateBeamProperties();
+        }
+    }
+
+    private void HandleFogMultiplierChanged(float multiplier)
+    {
+        UpdateBeamProperties();
+    }
+
+    private void UpdateBeamProperties()
+    {
+        if (beamRenderer == null) return;
+        if (beamPropertyBlock == null) beamPropertyBlock = new MaterialPropertyBlock();
+
+        float effectiveFog = FogZone.CurrentVolumetricMultiplier;
+        Color tintedColor = new Color(beamColor.r, beamColor.g, beamColor.b, beamColor.a * currentBeamFade);
+
+        beamRenderer.GetPropertyBlock(beamPropertyBlock);
+        beamPropertyBlock.SetColor(ColorProp, tintedColor);
+        beamPropertyBlock.SetFloat(IntensityProp, beamIntensity);
+        beamPropertyBlock.SetFloat(FogMultiplierProp, effectiveFog);
+        beamRenderer.SetPropertyBlock(beamPropertyBlock);
+    }
+
     private void UpdateSway()
     {
-        // Membaca pergerakan mouse untuk rotasi lag halus
         float mouseX = -Input.GetAxis("Mouse X") * swayAmount;
         float mouseY = -Input.GetAxis("Mouse Y") * swayAmount;
 
@@ -205,4 +388,3 @@ public class FlashlightController : MonoBehaviour
         flickerRoutine = null;
     }
 }
-
