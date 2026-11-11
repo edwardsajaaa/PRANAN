@@ -267,3 +267,4 @@ public class SwingingHangingLamp : MonoBehaviour
         Gizmos.DrawWireSphere(bottomRestPos, lightRange);
     }
 }
+

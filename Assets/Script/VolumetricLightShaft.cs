@@ -242,3 +242,4 @@ public class VolumetricLightShaft : MonoBehaviour
         Gizmos.DrawLine(topCenter - Vector3.right * topRadius, bottomCenter - Vector3.right * bottomRadius);
     }
 }
+

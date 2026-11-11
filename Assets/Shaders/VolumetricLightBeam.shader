@@ -123,3 +123,4 @@ Shader "PRANAN/VolumetricLightBeam"
     }
     FallBack "Transparent/Cutout/VertexLit"
 }
+
