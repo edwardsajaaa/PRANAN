@@ -3,7 +3,12 @@ guid: 1e333463dda247140996f1a2f5fee49c
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Rock_CliffVolcanic
+    second: {fileID: 2100000, guid: d604b5636c9ab974794f11ca118f0584, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

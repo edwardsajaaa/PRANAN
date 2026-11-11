@@ -3,7 +3,12 @@ guid: 5acca80a1156ec34c8ea54cf9c0a8f6b
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Rock_RiverBoulder
+    second: {fileID: 2100000, guid: f522a3cb89652a04c934dcc964eb510d, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

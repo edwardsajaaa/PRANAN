@@ -3,7 +3,12 @@ guid: 0e67432d695ea6f4eac2520da3e10e49
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Debris_DryLitter
+    second: {fileID: 2100000, guid: 85cae4eeae8de4d47b14e8d9e9968828, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

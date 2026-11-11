@@ -40,7 +40,8 @@ public class RadioDialogueManager : MonoBehaviour
     [SerializeField] private float fadeDuration = 0.25f;
 
     [Header("Scene 1 Auto-Play")]
-    [SerializeField] private bool autoPlayScene1OnExploration = true;
+    [Tooltip("Jika dicentang, dialog Scene 1 langsung dimulai saat game/prolog selesai. Jika ingin lewat trigger portal, matikan opsi ini.")]
+    [SerializeField] private bool autoPlayScene1OnExploration = false;
     [SerializeField] private float scene1StartDelay = 1.5f;
 
     private Coroutine activeDialogueRoutine;
@@ -95,7 +96,7 @@ public class RadioDialogueManager : MonoBehaviour
 
     private void HandleStateChanged(GameState newState)
     {
-        if (newState == GameState.Exploration && !hasPlayedScene1 && !PrologueController.IsPrologueRunning)
+        if (autoPlayScene1OnExploration && newState == GameState.Exploration && !hasPlayedScene1 && !PrologueController.IsPrologueRunning)
         {
             TryTriggerScene1();
         }
