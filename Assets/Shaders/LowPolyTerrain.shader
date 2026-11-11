@@ -114,6 +114,102 @@ Shader "Custom/LowPolyTerrain"
 
         Pass
         {
+            Name "ForwardAdd"
+            Tags { "LightMode"="ForwardAdd" }
+            Blend One One
+            ZWrite Off
+
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma target 3.0
+            #pragma multi_compile_fwdadd_fullshadows
+            #pragma multi_compile_fog
+            #include "UnityCG.cginc"
+            #include "AutoLight.cginc"
+            #include "Lighting.cginc"
+
+            struct appdata
+            {
+                float4 vertex : POSITION;
+                float3 normal : NORMAL;
+                float4 texcoord : TEXCOORD0;
+            };
+
+            struct v2f
+            {
+                float4 pos : SV_POSITION;
+                float3 worldPos : TEXCOORD0;
+                float2 uv : TEXCOORD4;
+                LIGHTING_COORDS(1, 2)
+                UNITY_FOG_COORDS(3)
+            };
+
+            fixed4 _GrassColor;
+            fixed4 _GrassHighColor;
+            fixed4 _RockColor;
+            fixed4 _SoilColor;
+            fixed4 _PathColor;
+            sampler2D _Control;
+            float _SlopeThreshold;
+            float _SlopeSmoothness;
+            float _HeightMin;
+            float _HeightMax;
+            float _LightIntensity;
+
+            v2f vert(appdata v)
+            {
+                v2f o;
+                o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+                o.pos = UnityObjectToClipPos(v.vertex);
+                o.uv = v.texcoord.xy;
+                TRANSFER_VERTEX_TO_FRAGMENT(o);
+                UNITY_TRANSFER_FOG(o, o.pos);
+                return o;
+            }
+
+            fixed4 frag(v2f i) : SV_Target
+            {
+                float3 ddxPos = ddx(i.worldPos);
+                float3 ddyPos = ddy(i.worldPos);
+                float3 flatNormal = normalize(cross(ddyPos, ddxPos));
+
+                float slope = 1.0 - saturate(dot(flatNormal, float3(0, 1, 0)));
+                float slopeFactor = smoothstep(_SlopeThreshold - _SlopeSmoothness, _SlopeThreshold + _SlopeSmoothness, slope);
+
+                float heightFactor = saturate((i.worldPos.y - _HeightMin) / max(_HeightMax - _HeightMin, 0.001));
+
+                fixed3 grass = lerp(_GrassColor.rgb, _GrassHighColor.rgb, heightFactor);
+                fixed3 land = lerp(_SoilColor.rgb, grass, smoothstep(0.0, 0.25, heightFactor));
+                fixed3 baseAlbedo = lerp(land, _RockColor.rgb, slopeFactor);
+
+                // Blend painted path/trail from Unity Terrain Splatmap
+                fixed4 splat = tex2D(_Control, i.uv);
+                float pathWeight = saturate(splat.g + splat.b + splat.a);
+                baseAlbedo = lerp(baseAlbedo, _PathColor.rgb, pathWeight);
+
+                #if defined(POINT) || defined(SPOT) || defined(POINT_COOKIE)
+                    float3 lightDir = normalize(_WorldSpaceLightPos0.xyz - i.worldPos);
+                #else
+                    float3 lightDir = normalize(_WorldSpaceLightPos0.xyz);
+                #endif
+
+                float NdotL = max(0.0, dot(flatNormal, lightDir));
+
+                UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
+
+                fixed3 diffuse = _LightColor0.rgb * (NdotL * atten * _LightIntensity);
+                fixed3 finalColor = baseAlbedo * diffuse;
+
+                UNITY_APPLY_FOG_COLOR(i.fogCoord, finalColor, fixed4(0, 0, 0, 0));
+
+                return fixed4(finalColor, 1.0);
+            }
+            ENDCG
+        }
+
+        Pass
+        {
             Name "ShadowCaster"
             Tags { "LightMode"="ShadowCaster" }
 
