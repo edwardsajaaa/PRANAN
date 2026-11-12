@@ -45,6 +45,22 @@ public class GameStateManager : MonoBehaviour
             return;
         }
         instance = this;
+
+        OptimizeTerrainRendering();
+    }
+
+    private void OptimizeTerrainRendering()
+    {
+        // Optimasi jarak render pohon dan detail semak di seluruh Terrain agar hutan tampak lebat dari kejauhan
+        foreach (var t in Terrain.activeTerrains)
+        {
+            if (t != null)
+            {
+                if (t.treeBillboardDistance < 400f) t.treeBillboardDistance = 500f;
+                if (t.treeMaximumFullLODCount < 1000) t.treeMaximumFullLODCount = 2500;
+                if (t.detailObjectDistance < 100f) t.detailObjectDistance = 140f;
+            }
+        }
     }
 
     private void Start()
