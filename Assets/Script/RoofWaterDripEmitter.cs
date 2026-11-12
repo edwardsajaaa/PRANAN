@@ -17,8 +17,9 @@ public class RoofWaterDripEmitter : MonoBehaviour
     [Tooltip("Tinggi jatuhnya tetesan air dari atap seng ke tanah berlumpur (meter)")]
     [SerializeField] private float fallDistance = 2.8f;
 
-    [Tooltip("Frekuensi rata-rata tetesan per detik")]
-    [SerializeField] private float dripsPerSecond = 4.0f;
+    [Tooltip("Frekuensi rata-rata tetesan per detik (nilai kecil = tetesan semakin sedikit dan jarang)")]
+    [Range(0.05f, 6.0f)]
+    [SerializeField] private float dripsPerSecond = 0.8f;
 
     [Header("Visual Tetesan Air (Droplet)")]
     [SerializeField] private Color dropletColor = new Color(0.85f, 0.92f, 1.0f, 0.75f);
@@ -34,8 +35,10 @@ public class RoofWaterDripEmitter : MonoBehaviour
     [SerializeField] private AudioClip customDripClip;
     [Range(0f, 1f)]
     [SerializeField] private float audioVolume = 0.45f;
-    [SerializeField] private float minIntervalSeconds = 1.2f;
-    [SerializeField] private float maxIntervalSeconds = 3.8f;
+    [Tooltip("Jeda waktu minimal antara tetesan bunyi air (detik)")]
+    [SerializeField] private float minIntervalSeconds = 3.0f;
+    [Tooltip("Jeda waktu maksimal antara tetesan bunyi air (detik)")]
+    [SerializeField] private float maxIntervalSeconds = 7.5f;
 
     private ParticleSystem dripPS;
     private ParticleSystemRenderer dripRenderer;
