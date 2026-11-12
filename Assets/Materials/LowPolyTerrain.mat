@@ -28,11 +28,14 @@ Material:
     - _HeightMax: 40
     - _HeightMin: 0
     - _LightIntensity: 1.15
+    - _PathTextureBlend: 0.7
+    - _PathTiling: 0.25
     - _SlopeSmoothness: 0.12
     - _SlopeThreshold: 0.55
     m_Colors:
     - _GrassColor: {r: 0.16, g: 0.35, b: 0.14, a: 1}
     - _GrassHighColor: {r: 0.22, g: 0.44, b: 0.18, a: 1}
+    - _PathColor: {r: 0.38, g: 0.28, b: 0.18, a: 1}
     - _RockColor: {r: 0.38, g: 0.4, b: 0.32, a: 1}
     - _SoilColor: {r: 0.22, g: 0.28, b: 0.16, a: 1}
   m_BuildTextureStacks: []

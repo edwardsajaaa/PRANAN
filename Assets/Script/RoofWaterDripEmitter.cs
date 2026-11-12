@@ -7,7 +7,7 @@ using UnityEngine;
 /// dan audio 3D spasial tetesan air alami.
 /// </summary>
 [ExecuteAlways]
-[RequireComponent(typeof(ParticleSystem))]
+[RequireComponent(typeof(ParticleSystem), typeof(AudioSource))]
 public class RoofWaterDripEmitter : MonoBehaviour
 {
     [Header("Eave Dimensions (Panjang Tepi Atap Seng)")]
@@ -214,7 +214,7 @@ public class RoofWaterDripEmitter : MonoBehaviour
     private void SetupAudioSource()
     {
         audioSource = GetComponent<AudioSource>();
-        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+        if (audioSource == null) return;
 
         audioSource.spatialBlend = 1.0f; // 3D spatial audio
         audioSource.minDistance = 1.5f;

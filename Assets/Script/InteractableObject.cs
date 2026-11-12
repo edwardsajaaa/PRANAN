@@ -117,8 +117,19 @@ public class InteractableObject : MonoBehaviour
     {
         if (col == null) return false;
 
-        Vector3 closestToEye = col.ClosestPoint(playerEyePos);
-        Vector3 closestToBody = col.ClosestPoint(playerBodyPos);
+        Vector3 closestToEye;
+        Vector3 closestToBody;
+
+        if (col is MeshCollider mc && !mc.convex)
+        {
+            closestToEye = col.bounds.ClosestPoint(playerEyePos);
+            closestToBody = col.bounds.ClosestPoint(playerBodyPos);
+        }
+        else
+        {
+            closestToEye = col.ClosestPoint(playerEyePos);
+            closestToBody = col.ClosestPoint(playerBodyPos);
+        }
 
         float distEye = Vector3.Distance(playerEyePos, closestToEye);
         float distBody = Vector3.Distance(playerBodyPos, closestToBody);

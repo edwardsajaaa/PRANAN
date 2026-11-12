@@ -7,6 +7,8 @@ Shader "Custom/LowPolyTerrain"
         _RockColor ("Rock / Slope Color", Color) = (0.38, 0.40, 0.32, 1.0)
         _SoilColor ("Soil / Basin Color", Color) = (0.22, 0.28, 0.16, 1.0)
         _PathColor ("Path / Dirt Trail Color", Color) = (0.38, 0.28, 0.18, 1.0)
+        _PathTiling ("Path Texture Tiling", Float) = 0.25
+        _PathTextureBlend ("Path Texture Strength", Range(0.0, 1.0)) = 0.7
         _SlopeThreshold ("Slope Threshold", Range(0.0, 1.0)) = 0.55
         _SlopeSmoothness ("Slope Blend", Range(0.01, 0.5)) = 0.12
         _HeightMin ("Height Min", Float) = 0.0
@@ -58,6 +60,9 @@ Shader "Custom/LowPolyTerrain"
             fixed4 _SoilColor;
             fixed4 _PathColor;
             sampler2D _Control;
+            sampler2D _Splat1;
+            float _PathTiling;
+            float _PathTextureBlend;
             float _SlopeThreshold;
             float _SlopeSmoothness;
             float _HeightMin;
@@ -93,7 +98,12 @@ Shader "Custom/LowPolyTerrain"
                 // Blend painted path/trail from Unity Terrain Splatmap
                 fixed4 splat = tex2D(_Control, i.uv);
                 float pathWeight = saturate(splat.g + splat.b + splat.a);
-                baseAlbedo = lerp(baseAlbedo, _PathColor.rgb, pathWeight);
+
+                // Sample texture Layer 1 (dirt / mud path) using world-space XZ UV coords
+                float2 pathUV = i.worldPos.xz * _PathTiling;
+                fixed3 pathTex = tex2D(_Splat1, pathUV).rgb;
+                fixed3 pathCol = lerp(_PathColor.rgb, _PathColor.rgb * pathTex * 1.6, _PathTextureBlend);
+                baseAlbedo = lerp(baseAlbedo, pathCol, pathWeight);
 
                 float3 lightDir = normalize(_WorldSpaceLightPos0.xyz);
                 float NdotL = max(0.0, dot(flatNormal, lightDir));
@@ -151,6 +161,9 @@ Shader "Custom/LowPolyTerrain"
             fixed4 _SoilColor;
             fixed4 _PathColor;
             sampler2D _Control;
+            sampler2D _Splat1;
+            float _PathTiling;
+            float _PathTextureBlend;
             float _SlopeThreshold;
             float _SlopeSmoothness;
             float _HeightMin;
@@ -186,7 +199,12 @@ Shader "Custom/LowPolyTerrain"
                 // Blend painted path/trail from Unity Terrain Splatmap
                 fixed4 splat = tex2D(_Control, i.uv);
                 float pathWeight = saturate(splat.g + splat.b + splat.a);
-                baseAlbedo = lerp(baseAlbedo, _PathColor.rgb, pathWeight);
+
+                // Sample texture Layer 1 (dirt / mud path) using world-space XZ UV coords
+                float2 pathUV = i.worldPos.xz * _PathTiling;
+                fixed3 pathTex = tex2D(_Splat1, pathUV).rgb;
+                fixed3 pathCol = lerp(_PathColor.rgb, _PathColor.rgb * pathTex * 1.6, _PathTextureBlend);
+                baseAlbedo = lerp(baseAlbedo, pathCol, pathWeight);
 
                 #if defined(POINT) || defined(SPOT) || defined(POINT_COOKIE)
                     float3 lightDir = normalize(_WorldSpaceLightPos0.xyz - i.worldPos);

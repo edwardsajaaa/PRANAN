@@ -3,7 +3,17 @@ guid: cef03fe3e55e6964781a3da4d9a7be54
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Marker_Ribbon
+    second: {fileID: 2100000, guid: 5b3b04064cb86564d9478f19639d5884, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Marker_WoodStake
+    second: {fileID: 2100000, guid: fd19c79457dc53a48963438531fdb9d4, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
