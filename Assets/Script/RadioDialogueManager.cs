@@ -5,6 +5,13 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+public enum RadioSpeakerState
+{
+    None,
+    Rangga,
+    Nadia
+}
+
 [System.Serializable]
 public class RadioDialogueLine
 {
@@ -19,6 +26,8 @@ public class RadioDialogueLine
 public class RadioDialogueManager : MonoBehaviour
 {
     public static RadioDialogueManager Instance { get; private set; }
+    public static event Action<RadioSpeakerState> OnRadioStateChanged;
+    public RadioSpeakerState CurrentRadioState { get; private set; } = RadioSpeakerState.None;
 
     [Header("UI References (Manual Setup)")]
     [SerializeField] private Canvas dialogueCanvas;
@@ -83,6 +92,11 @@ public class RadioDialogueManager : MonoBehaviour
     {
         GameStateManager.OnStateChanged -= HandleStateChanged;
         PrologueController.OnPrologueFinished -= HandlePrologueFinished;
+
+        if (Instance == this)
+        {
+            SetRadioState(RadioSpeakerState.None);
+        }
     }
 
     private void HandlePrologueFinished()
@@ -186,6 +200,8 @@ public class RadioDialogueManager : MonoBehaviour
 
         if (speakerText != null) speakerText.text = "";
         if (bodyText != null) bodyText.text = "";
+
+        SetRadioState(RadioSpeakerState.None);
     }
 
     public void StartDialogueSequence(List<RadioDialogueLine> lines)
@@ -210,6 +226,8 @@ public class RadioDialogueManager : MonoBehaviour
         {
             if (line == null) continue;
 
+            SetRadioState(ResolveSpeakerState(line));
+
             if (line.audioClip != null && audioSource != null)
             {
                 audioSource.PlayOneShot(line.audioClip, 0.7f);
@@ -224,7 +242,32 @@ public class RadioDialogueManager : MonoBehaviour
             yield return new WaitForSecondsRealtime(0.2f);
         }
 
+        SetRadioState(RadioSpeakerState.None);
         activeDialogueRoutine = null;
+    }
+
+    private RadioSpeakerState ResolveSpeakerState(RadioDialogueLine line)
+    {
+        if (line == null || line.isMonologue)
+            return RadioSpeakerState.None;
+
+        if (!string.IsNullOrEmpty(line.speaker))
+        {
+            string lower = line.speaker.ToLowerInvariant();
+            if (lower.Contains("rangga"))
+                return RadioSpeakerState.Rangga;
+            if (lower.Contains("nadia"))
+                return RadioSpeakerState.Nadia;
+        }
+
+        return RadioSpeakerState.Nadia;
+    }
+
+    private void SetRadioState(RadioSpeakerState newState)
+    {
+        if (CurrentRadioState == newState) return;
+        CurrentRadioState = newState;
+        OnRadioStateChanged?.Invoke(newState);
     }
 
     private void UpdateUIContent(RadioDialogueLine line)
