@@ -20,12 +20,12 @@ public class WalkieTalkieController : MonoBehaviour
     [SerializeField] private Vector3 hiddenRotationOffset = new Vector3(30f, 0f, -12f);
 
     [Tooltip("Offset posisi saat Rangga berbicara (mendekat ke kamera / mulut player)")]
-    [SerializeField] private Vector3 speakingPositionOffset = new Vector3(-0.06f, 0.05f, -0.07f);
-    [SerializeField] private Vector3 speakingRotationOffset = new Vector3(-8f, 14f, 6f);
+    [SerializeField] private Vector3 speakingPositionOffset = new Vector3(-0.05f, 0.01f, -0.07f);
+    [SerializeField] private Vector3 speakingRotationOffset = new Vector3(-6f, 12f, 5f);
 
-    [Tooltip("Offset posisi saat mendengarkan suara Nadia (menjauh sedikit dari kamera)")]
-    [SerializeField] private Vector3 listeningPositionOffset = new Vector3(0.01f, 0.0f, 0.04f);
-    [SerializeField] private Vector3 listeningRotationOffset = new Vector3(4f, -6f, -4f);
+    [Tooltip("Offset posisi saat mendengarkan suara Nadia (menjauh & turun sedikit dari kamera)")]
+    [SerializeField] private Vector3 listeningPositionOffset = new Vector3(0.02f, -0.07f, 0.06f);
+    [SerializeField] private Vector3 listeningRotationOffset = new Vector3(6f, -6f, -4f);
 
     [Header("Kecepatan Transisi Animasi")]
     [Tooltip("Waktu perpindahan posisi saat mengangkat / mendekatkan / menjauhkan walkie-talkie")]
