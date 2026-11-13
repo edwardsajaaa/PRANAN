@@ -12,16 +12,19 @@ using UnityEngine;
 public class WalkieTalkieController : MonoBehaviour
 {
     [Header("Offset Posisi & Rotasi (Relatif terhadap Posisi Awal di Scene)")]
+    [Tooltip("Penyesuaian tinggi keseluruhan saat walkie-talkie muncul (naikkan jika dirasa terlalu rendah)")]
+    [SerializeField] private float verticalOffset = 0.04f;
+
     [Tooltip("Offset posisi saat walkie-talkie disimpan / tidak digunakan (turun ke bawah layar)")]
-    [SerializeField] private Vector3 hiddenPositionOffset = new Vector3(0.06f, -0.45f, -0.05f);
-    [SerializeField] private Vector3 hiddenRotationOffset = new Vector3(35f, 0f, -15f);
+    [SerializeField] private Vector3 hiddenPositionOffset = new Vector3(0.04f, -0.30f, -0.02f);
+    [SerializeField] private Vector3 hiddenRotationOffset = new Vector3(30f, 0f, -12f);
 
     [Tooltip("Offset posisi saat Rangga berbicara (mendekat ke kamera / mulut player)")]
-    [SerializeField] private Vector3 speakingPositionOffset = new Vector3(-0.07f, 0.05f, -0.08f);
+    [SerializeField] private Vector3 speakingPositionOffset = new Vector3(-0.06f, 0.09f, -0.08f);
     [SerializeField] private Vector3 speakingRotationOffset = new Vector3(-8f, 14f, 6f);
 
     [Tooltip("Offset posisi saat mendengarkan suara Nadia (menjauh sedikit dari kamera)")]
-    [SerializeField] private Vector3 listeningPositionOffset = new Vector3(0.02f, -0.03f, 0.05f);
+    [SerializeField] private Vector3 listeningPositionOffset = new Vector3(0.01f, 0.02f, 0.04f);
     [SerializeField] private Vector3 listeningRotationOffset = new Vector3(4f, -6f, -4f);
 
     [Header("Kecepatan Transisi Animasi")]
@@ -184,15 +187,17 @@ public class WalkieTalkieController : MonoBehaviour
 
     private void GetTargetPose(RadioSpeakerState state, out Vector3 targetPos, out Quaternion targetRot)
     {
+        Vector3 heightAdj = new Vector3(0f, verticalOffset, 0f);
+
         switch (state)
         {
             case RadioSpeakerState.Rangga:
-                targetPos = baseLocalPosition + speakingPositionOffset;
+                targetPos = baseLocalPosition + speakingPositionOffset + heightAdj;
                 targetRot = baseLocalRotation * Quaternion.Euler(speakingRotationOffset);
                 break;
 
             case RadioSpeakerState.Nadia:
-                targetPos = baseLocalPosition + listeningPositionOffset;
+                targetPos = baseLocalPosition + listeningPositionOffset + heightAdj;
                 targetRot = baseLocalRotation * Quaternion.Euler(listeningRotationOffset);
                 break;
 
@@ -218,3 +223,4 @@ public class WalkieTalkieController : MonoBehaviour
         }
     }
 }
+
