@@ -74,7 +74,7 @@ public class InteractableObject : MonoBehaviour
 
         if (playerTransform != null)
         {
-            float dist = Vector3.Distance(transform.position, playerTransform.position);
+            float dist = Vector3.Distance(GetCenterPosition(), playerTransform.position);
             if (dist <= approachDistance)
             {
                 hasTriggeredApproach = true;
@@ -91,8 +91,16 @@ public class InteractableObject : MonoBehaviour
         if (triggerOnApproach)
         {
             Gizmos.color = new Color(0.2f, 0.9f, 0.4f, 0.35f);
-            Gizmos.DrawWireSphere(transform.position, approachDistance);
+            Gizmos.DrawWireSphere(GetCenterPosition(), approachDistance);
         }
+    }
+
+    private Vector3 GetCenterPosition()
+    {
+        if (targetPivot != null) return targetPivot.position;
+        Collider col = GetComponent<Collider>();
+        if (col != null) return col.bounds.center;
+        return transform.position;
     }
 
     [Header("Interaction Settings")]
