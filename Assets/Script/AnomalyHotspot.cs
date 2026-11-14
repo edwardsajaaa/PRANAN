@@ -20,6 +20,12 @@ public class AnomalyHotspot : MonoBehaviour
     [Header("STADI 2025 Evidence Link")]
     public ClueEvidenceType evidenceType = ClueEvidenceType.General;
 
+    [Header("Monologue Saat Anomali Ditemukan (Opsional)")]
+    [Tooltip("Jika diisi, memicu monolog batin Rangga saat titik anomali ini berhasil ditemukan di Clue Inspector")]
+    [TextArea(2, 4)]
+    public string discoveryMonologue;
+    public float discoveryMonologueDuration = 8.0f;
+
     [Header("State")]
     public bool isDiscovered = false;
     private float currentDwellTime = 0f;

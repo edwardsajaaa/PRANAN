@@ -634,6 +634,11 @@ public class ClueInspector : MonoBehaviour
             inspectionUI.OnHotspotIdentified(hotspot);
         }
 
+        if (!string.IsNullOrEmpty(hotspot.discoveryMonologue) && RadioDialogueManager.Instance != null)
+        {
+            RadioDialogueManager.Instance.ShowMonologue(hotspot.discoveryMonologue, hotspot.discoveryMonologueDuration);
+        }
+
         if (JournalManager.Instance != null && activeClue != null)
         {
             ClueEvidenceType effectiveType = hotspot.evidenceType != ClueEvidenceType.General
