@@ -7,25 +7,42 @@ using UnityEngine;
 /// - Muncul ke tangan saat komunikasi dimulai
 /// - Mendekat ke kamera/mulut player saat Rangga berbicara
 /// - Menjauh sedikit saat mendengarkan suara Nadia
-/// - Memiliki ayunan tangan (hand sway) halus agar terasa alami
+///
+/// Cara Setup Visual (WYSIWYG) di Unity Inspector:
+/// 1. Pasang script ini di PROP_Comms_WalkieTalkie (anak dari Main Camera).
+/// 2. Atur posisi walkie-talkie untuk mendengarkan Nadia di Scene View -> klik titik tiga (⋮) komponen ini -> "Simpan Posisi Ini -> Pose Mendengarkan (Nadia)".
+/// 3. Geser walkie-talkie lebih dekat ke kamera untuk Rangga berbicara -> klik titik tiga (⋮) -> "Simpan Posisi Ini -> Pose Berbicara (Rangga)".
+/// 4. (Opsional) Geser ke bawah layar -> klik titik tiga (⋮) -> "Simpan Posisi Ini -> Pose Tersembunyi".
 /// </summary>
 public class WalkieTalkieController : MonoBehaviour
 {
-    [Header("Offset Posisi & Rotasi (Relatif terhadap Posisi Awal di Scene)")]
-    [Tooltip("Penyesuaian tinggi keseluruhan saat walkie-talkie muncul (naikkan jika dirasa terlalu rendah)")]
-    [SerializeField] private float verticalOffset = 0f;
+    [Header("Pose Tersimpan (Atur lewat menu titik tiga ⋮ di kanan atas komponen ini)")]
+    [SerializeField] private bool useCustomListeningPose = false;
+    [SerializeField] private Vector3 customListeningPos;
+    [SerializeField] private Vector3 customListeningEuler;
 
-    [Tooltip("Offset posisi saat walkie-talkie disimpan / tidak digunakan (turun ke bawah layar)")]
-    [SerializeField] private Vector3 hiddenPositionOffset = new Vector3(0.04f, -0.30f, -0.02f);
+    [SerializeField] private bool useCustomSpeakingPose = false;
+    [SerializeField] private Vector3 customSpeakingPos;
+    [SerializeField] private Vector3 customSpeakingEuler;
+
+    [SerializeField] private bool useCustomHiddenPose = false;
+    [SerializeField] private Vector3 customHiddenPos;
+    [SerializeField] private Vector3 customHiddenEuler;
+
+    [Header("Anchor Transform (Opsional - jika ingin memakai Empty GameObject)")]
+    [SerializeField] private Transform speakingPoseAnchor;
+    [SerializeField] private Transform listeningPoseAnchor;
+    [SerializeField] private Transform hiddenPoseAnchor;
+
+    [Header("Offset Fallback (Jika Pose Tersimpan & Anchor belum diatur)")]
+    [SerializeField] private Vector3 hiddenPositionOffset = new Vector3(0.05f, -0.55f, -0.05f);
     [SerializeField] private Vector3 hiddenRotationOffset = new Vector3(30f, 0f, -12f);
 
-    [Tooltip("Offset posisi saat Rangga berbicara (mendekat ke kamera / mulut player)")]
-    [SerializeField] private Vector3 speakingPositionOffset = new Vector3(-0.05f, 0.01f, -0.07f);
+    [SerializeField] private Vector3 speakingPositionOffset = new Vector3(-0.14f, 0.03f, -0.25f);
     [SerializeField] private Vector3 speakingRotationOffset = new Vector3(-6f, 12f, 5f);
 
-    [Tooltip("Offset posisi saat mendengarkan suara Nadia (menjauh & turun sedikit dari kamera)")]
-    [SerializeField] private Vector3 listeningPositionOffset = new Vector3(0.02f, -0.07f, 0.06f);
-    [SerializeField] private Vector3 listeningRotationOffset = new Vector3(6f, -6f, -4f);
+    [SerializeField] private Vector3 listeningPositionOffset = new Vector3(0f, 0f, 0f);
+    [SerializeField] private Vector3 listeningRotationOffset = new Vector3(0f, 0f, 0f);
 
     [Header("Kecepatan Transisi Animasi")]
     [Tooltip("Waktu perpindahan posisi saat mengangkat / mendekatkan / menjauhkan walkie-talkie")]
@@ -70,8 +87,7 @@ public class WalkieTalkieController : MonoBehaviour
 
         // Mulai dalam keadaan tersembunyi di bawah layar sebelum ada komunikasi radio
         currentState = RadioSpeakerState.None;
-        currentAnchorPos = baseLocalPosition + hiddenPositionOffset;
-        currentAnchorRot = baseLocalRotation * Quaternion.Euler(hiddenRotationOffset);
+        GetTargetPose(RadioSpeakerState.None, out currentAnchorPos, out currentAnchorRot);
 
         transform.localPosition = currentAnchorPos;
         transform.localRotation = currentAnchorRot;
@@ -128,7 +144,6 @@ public class WalkieTalkieController : MonoBehaviour
             SetRenderersVisible(true);
         }
 
-        // Bunyi klik PTT opsional saat Rangga mulai atau selesai menekan tombol bicara
         if (pttAudioSource != null)
         {
             if (currentState == RadioSpeakerState.Rangga && pttPressSound != null)
@@ -154,10 +169,9 @@ public class WalkieTalkieController : MonoBehaviour
         currentAnchorPos = Vector3.SmoothDamp(currentAnchorPos, targetPos, ref positionVelocity, smoothTime, Mathf.Infinity, dt);
         currentAnchorRot = Quaternion.Slerp(currentAnchorRot, targetRot, 1f - Mathf.Exp(-rotationSmoothSpeed * dt));
 
-        // Matikan renderer setelah animasi turun selesai agar hemat performa & tidak bocor ke kamera
         if (currentState == RadioSpeakerState.None)
         {
-            if (renderersVisible && Vector3.Distance(currentAnchorPos, targetPos) < 0.012f)
+            if (renderersVisible && Vector3.Distance(currentAnchorPos, targetPos) < 0.015f)
             {
                 SetRenderersVisible(false);
             }
@@ -187,24 +201,74 @@ public class WalkieTalkieController : MonoBehaviour
 
     private void GetTargetPose(RadioSpeakerState state, out Vector3 targetPos, out Quaternion targetRot)
     {
-        Vector3 heightAdj = new Vector3(0f, verticalOffset, 0f);
-
         switch (state)
         {
             case RadioSpeakerState.Rangga:
-                targetPos = baseLocalPosition + speakingPositionOffset + heightAdj;
-                targetRot = baseLocalRotation * Quaternion.Euler(speakingRotationOffset);
+                if (speakingPoseAnchor != null)
+                {
+                    GetAnchorLocalPose(speakingPoseAnchor, out targetPos, out targetRot);
+                }
+                else if (useCustomSpeakingPose)
+                {
+                    targetPos = customSpeakingPos;
+                    targetRot = Quaternion.Euler(customSpeakingEuler);
+                }
+                else
+                {
+                    targetPos = baseLocalPosition + speakingPositionOffset;
+                    targetRot = baseLocalRotation * Quaternion.Euler(speakingRotationOffset);
+                }
                 break;
 
             case RadioSpeakerState.Nadia:
-                targetPos = baseLocalPosition + listeningPositionOffset + heightAdj;
-                targetRot = baseLocalRotation * Quaternion.Euler(listeningRotationOffset);
+                if (listeningPoseAnchor != null)
+                {
+                    GetAnchorLocalPose(listeningPoseAnchor, out targetPos, out targetRot);
+                }
+                else if (useCustomListeningPose)
+                {
+                    targetPos = customListeningPos;
+                    targetRot = Quaternion.Euler(customListeningEuler);
+                }
+                else
+                {
+                    targetPos = baseLocalPosition + listeningPositionOffset;
+                    targetRot = baseLocalRotation * Quaternion.Euler(listeningRotationOffset);
+                }
                 break;
 
             default:
-                targetPos = baseLocalPosition + hiddenPositionOffset;
-                targetRot = baseLocalRotation * Quaternion.Euler(hiddenRotationOffset);
+                if (hiddenPoseAnchor != null)
+                {
+                    GetAnchorLocalPose(hiddenPoseAnchor, out targetPos, out targetRot);
+                }
+                else if (useCustomHiddenPose)
+                {
+                    targetPos = customHiddenPos;
+                    targetRot = Quaternion.Euler(customHiddenEuler);
+                }
+                else
+                {
+                    Vector3 refPos = useCustomListeningPose ? customListeningPos : baseLocalPosition;
+                    Quaternion refRot = useCustomListeningPose ? Quaternion.Euler(customListeningEuler) : baseLocalRotation;
+                    targetPos = refPos + hiddenPositionOffset;
+                    targetRot = refRot * Quaternion.Euler(hiddenRotationOffset);
+                }
                 break;
+        }
+    }
+
+    private void GetAnchorLocalPose(Transform anchor, out Vector3 localPos, out Quaternion localRot)
+    {
+        if (transform.parent != null)
+        {
+            localPos = transform.parent.InverseTransformPoint(anchor.position);
+            localRot = Quaternion.Inverse(transform.parent.rotation) * anchor.rotation;
+        }
+        else
+        {
+            localPos = anchor.position;
+            localRot = anchor.rotation;
         }
     }
 
@@ -222,5 +286,54 @@ public class WalkieTalkieController : MonoBehaviour
             }
         }
     }
-}
 
+#if UNITY_EDITOR
+    [ContextMenu("Simpan Posisi Ini -> Pose Mendengarkan (Nadia)")]
+    private void SaveListeningPose()
+    {
+        useCustomListeningPose = true;
+        customListeningPos = transform.localPosition;
+        customListeningEuler = transform.localEulerAngles;
+        UnityEditor.EditorUtility.SetDirty(this);
+        Debug.Log($"[WalkieTalkieController] Pose Mendengarkan (Nadia) disimpan: {customListeningPos}");
+    }
+
+    [ContextMenu("Simpan Posisi Ini -> Pose Berbicara (Rangga)")]
+    private void SaveSpeakingPose()
+    {
+        useCustomSpeakingPose = true;
+        customSpeakingPos = transform.localPosition;
+        customSpeakingEuler = transform.localEulerAngles;
+        UnityEditor.EditorUtility.SetDirty(this);
+        Debug.Log($"[WalkieTalkieController] Pose Berbicara (Rangga) disimpan: {customSpeakingPos}");
+    }
+
+    [ContextMenu("Simpan Posisi Ini -> Pose Tersembunyi")]
+    private void SaveHiddenPose()
+    {
+        useCustomHiddenPose = true;
+        customHiddenPos = transform.localPosition;
+        customHiddenEuler = transform.localEulerAngles;
+        UnityEditor.EditorUtility.SetDirty(this);
+        Debug.Log($"[WalkieTalkieController] Pose Tersembunyi disimpan: {customHiddenPos}");
+    }
+
+    [ContextMenu("Preview -> Pindah ke Pose Mendengarkan")]
+    private void PreviewListeningPose()
+    {
+        if (!useCustomListeningPose) return;
+        transform.localPosition = customListeningPos;
+        transform.localEulerAngles = customListeningEuler;
+        UnityEditor.EditorUtility.SetDirty(transform);
+    }
+
+    [ContextMenu("Preview -> Pindah ke Pose Berbicara")]
+    private void PreviewSpeakingPose()
+    {
+        if (!useCustomSpeakingPose) return;
+        transform.localPosition = customSpeakingPos;
+        transform.localEulerAngles = customSpeakingEuler;
+        UnityEditor.EditorUtility.SetDirty(transform);
+    }
+#endif
+}
