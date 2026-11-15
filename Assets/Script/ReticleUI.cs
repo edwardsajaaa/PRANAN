@@ -76,6 +76,16 @@ public class ReticleUI : MonoBehaviour
         }
     }
 
+    public void ShowLockedPrompt(string message)
+    {
+        isTargeting = false;
+        if (promptText != null)
+        {
+            promptText.text = message;
+            promptText.gameObject.SetActive(true);
+        }
+    }
+
     public void ClearPrompt()
     {
         isTargeting = false;

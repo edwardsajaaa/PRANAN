@@ -49,13 +49,84 @@ public class InteractableObject : MonoBehaviour
     [Tooltip("Durasi teks monolog tampil di layar (detik)")]
     public float monologueDuration = 7.5f;
 
+    [Header("Orbit Requirement (Harus Mengitari Objek Terlebih Dahulu)")]
+    [Tooltip("Jika dicentang, player harus berjalan mengelilingi objek ini terlebih dahulu sebelum bisa berinteraksi [E]")]
+    public bool requireOrbitBeforeInteract = false;
+    [Tooltip("Jarak maksimum dari pusat objek agar langkah player terhitung sedang mengitari")]
+    public float orbitMaxDistance = 4.5f;
+    [Tooltip("Persentase keliling lingkaran yang harus dilewati (0.5 = 180°, 0.75 = 270°, 1.0 = 360° penuh)")]
+    [Range(0.25f, 1.0f)]
+    public float requiredOrbitCoverage = 0.75f;
+
+    private const int OrbitSectorCount = 12;
+    private bool[] visitedOrbitSectors;
+    private int visitedOrbitSectorCount = 0;
+    private bool isOrbitUnlocked = false;
     private bool hasTriggeredApproach = false;
+
+    public bool CanInteract => !requireOrbitBeforeInteract || isOrbitUnlocked;
+
+    public float OrbitProgressNormalized
+    {
+        get
+        {
+            if (!requireOrbitBeforeInteract || isOrbitUnlocked) return 1f;
+            int requiredSectors = Mathf.Max(1, Mathf.CeilToInt(OrbitSectorCount * requiredOrbitCoverage));
+            return Mathf.Clamp01((float)visitedOrbitSectorCount / requiredSectors);
+        }
+    }
 
     private void Update()
     {
+        if (requireOrbitBeforeInteract && !isOrbitUnlocked)
+        {
+            TrackPlayerOrbit();
+        }
+
         if (triggerOnApproach && !hasTriggeredApproach && !string.IsNullOrEmpty(examinationMonologue))
         {
             CheckApproachTrigger();
+        }
+    }
+
+    private void TrackPlayerOrbit()
+    {
+        if (GameStateManager.Instance != null && GameStateManager.Instance.CurrentState != GameState.Exploration)
+        {
+            return;
+        }
+
+        Camera cam = Camera.main;
+        if (cam == null) return;
+
+        Vector3 center = GetCenterPosition();
+        Vector3 playerPos = cam.transform.position;
+        Vector2 deltaXZ = new Vector2(playerPos.x - center.x, playerPos.z - center.z);
+
+        if (deltaXZ.sqrMagnitude > orbitMaxDistance * orbitMaxDistance || deltaXZ.sqrMagnitude < 0.04f)
+        {
+            return;
+        }
+
+        if (visitedOrbitSectors == null || visitedOrbitSectors.Length != OrbitSectorCount)
+        {
+            visitedOrbitSectors = new bool[OrbitSectorCount];
+        }
+
+        float angleDeg = Mathf.Atan2(deltaXZ.y, deltaXZ.x) * Mathf.Rad2Deg;
+        if (angleDeg < 0f) angleDeg += 360f;
+
+        int sectorIndex = Mathf.Clamp(Mathf.FloorToInt(angleDeg / (360f / OrbitSectorCount)), 0, OrbitSectorCount - 1);
+        if (!visitedOrbitSectors[sectorIndex])
+        {
+            visitedOrbitSectors[sectorIndex] = true;
+            visitedOrbitSectorCount++;
+
+            int requiredSectors = Mathf.Max(1, Mathf.CeilToInt(OrbitSectorCount * requiredOrbitCoverage));
+            if (visitedOrbitSectorCount >= requiredSectors)
+            {
+                isOrbitUnlocked = true;
+            }
         }
     }
 
@@ -88,10 +159,17 @@ public class InteractableObject : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
+        Vector3 center = GetCenterPosition();
         if (triggerOnApproach)
         {
             Gizmos.color = new Color(0.2f, 0.9f, 0.4f, 0.35f);
-            Gizmos.DrawWireSphere(GetCenterPosition(), approachDistance);
+            Gizmos.DrawWireSphere(center, approachDistance);
+        }
+
+        if (requireOrbitBeforeInteract)
+        {
+            Gizmos.color = new Color(1f, 0.78f, 0.2f, 0.55f);
+            Gizmos.DrawWireSphere(center, orbitMaxDistance);
         }
     }
 
@@ -149,6 +227,8 @@ public class InteractableObject : MonoBehaviour
 
     public virtual void Interact(Transform playerTransform)
     {
+        if (!CanInteract) return;
+
         if (!string.IsNullOrEmpty(examinationMonologue) && playMonologueOnInteract)
         {
             if (RadioDialogueManager.Instance != null)

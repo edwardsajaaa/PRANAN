@@ -22,6 +22,7 @@ public class PlayerInteract : MonoBehaviour
 
     private Camera mainCamera;
     private InteractableObject currentBestTarget;
+    private string lastDisplayedPrompt = null;
 
     void Start()
     {
@@ -33,9 +34,10 @@ public class PlayerInteract : MonoBehaviour
 
         if (GameStateManager.Instance != null && GameStateManager.Instance.CurrentState != GameState.Exploration)
         {
-            if (currentBestTarget != null)
+            if (currentBestTarget != null || lastDisplayedPrompt != null)
             {
                 currentBestTarget = null;
+                lastDisplayedPrompt = null;
                 if (ReticleUI.Instance != null) ReticleUI.Instance.ClearPrompt();
             }
             return;
@@ -94,30 +96,49 @@ public class PlayerInteract : MonoBehaviour
             }
         }
 
-        if (bestCandidate != currentBestTarget)
-        {
-            currentBestTarget = bestCandidate;
+        currentBestTarget = bestCandidate;
 
-            if (currentBestTarget != null)
+        if (currentBestTarget != null)
+        {
+            if (currentBestTarget.CanInteract)
             {
-                if (ReticleUI.Instance != null)
+                string promptKey = $"READY:{currentBestTarget.GetInstanceID()}:{currentBestTarget.clueName}";
+                if (lastDisplayedPrompt != promptKey)
                 {
-                    ReticleUI.Instance.ShowPrompt(currentBestTarget.clueName);
+                    lastDisplayedPrompt = promptKey;
+                    if (ReticleUI.Instance != null)
+                    {
+                        ReticleUI.Instance.ShowPrompt(currentBestTarget.clueName);
+                    }
                 }
             }
             else
             {
-                if (ReticleUI.Instance != null)
+                int pct = Mathf.RoundToInt(currentBestTarget.OrbitProgressNormalized * 100f);
+                string lockedMsg = $"Kelilingi {currentBestTarget.clueName} terlebih dahulu ({pct}%)";
+                if (lastDisplayedPrompt != lockedMsg)
                 {
-                    ReticleUI.Instance.ClearPrompt();
+                    lastDisplayedPrompt = lockedMsg;
+                    if (ReticleUI.Instance != null)
+                    {
+                        ReticleUI.Instance.ShowLockedPrompt(lockedMsg);
+                    }
                 }
+            }
+        }
+        else if (lastDisplayedPrompt != null)
+        {
+            lastDisplayedPrompt = null;
+            if (ReticleUI.Instance != null)
+            {
+                ReticleUI.Instance.ClearPrompt();
             }
         }
     }
 
     private void HandleInteractionInput()
     {
-        if (Input.GetKeyDown(interactKey) && currentBestTarget != null)
+        if (Input.GetKeyDown(interactKey) && currentBestTarget != null && currentBestTarget.CanInteract)
         {
             currentBestTarget.Interact(transform);
         }
