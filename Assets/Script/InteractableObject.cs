@@ -39,6 +39,10 @@ public class InteractableObject : MonoBehaviour
     [TextArea(3, 6)]
     public string examinationMonologue;
     public bool playMonologueOnInteract = true;
+    [Tooltip("Jika dicentang, monolog batin baru muncul setelah player memutar objek di Clue Inspector")]
+    public bool triggerMonologueAfterRotate = false;
+    [Tooltip("Total sudut putaran (derajat) yang dibutuhkan di Clue Inspector sebelum monolog muncul")]
+    public float requiredInspectionRotationAngle = 120f;
     public bool trigger3DInspection = true;
 
     [Header("Proximity Monologue (Memicu Saat Mendekat)")]
@@ -229,7 +233,7 @@ public class InteractableObject : MonoBehaviour
     {
         if (!CanInteract) return;
 
-        if (!string.IsNullOrEmpty(examinationMonologue) && playMonologueOnInteract)
+        if (!string.IsNullOrEmpty(examinationMonologue) && playMonologueOnInteract && !triggerMonologueAfterRotate)
         {
             if (RadioDialogueManager.Instance != null)
             {

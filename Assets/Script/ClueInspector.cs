@@ -56,6 +56,8 @@ public class ClueInspector : MonoBehaviour
 
     private Vector2 angularVelocity;
     private float currentZoom;
+    private float accumulatedRotationAngle = 0f;
+    private bool hasTriggeredRotationMonologue = false;
     private bool isDragging = false;
     private bool isInspecting = false;
     private bool isTransitioning = false;
@@ -101,6 +103,8 @@ public class ClueInspector : MonoBehaviour
         activeClue = clue;
         isInspecting = true;
         isClosing = false;
+        accumulatedRotationAngle = 0f;
+        hasTriggeredRotationMonologue = false;
 
         if (modelHolder != null)
         {
@@ -576,6 +580,20 @@ public class ClueInspector : MonoBehaviour
         Quaternion rotX = Quaternion.AngleAxis(angularVelocity.y, camRight);
 
         targetToRotate.rotation = (rotX * rotY) * targetToRotate.rotation;
+
+        accumulatedRotationAngle += angularVelocity.magnitude;
+        if (!hasTriggeredRotationMonologue
+            && activeClue != null
+            && activeClue.triggerMonologueAfterRotate
+            && !string.IsNullOrEmpty(activeClue.examinationMonologue)
+            && accumulatedRotationAngle >= activeClue.requiredInspectionRotationAngle)
+        {
+            hasTriggeredRotationMonologue = true;
+            if (RadioDialogueManager.Instance != null)
+            {
+                RadioDialogueManager.Instance.ShowMonologue(activeClue.examinationMonologue, activeClue.monologueDuration);
+            }
+        }
     }
 
     private void HandleZoom()
@@ -871,7 +889,7 @@ public class ClueInspector : MonoBehaviour
         if (threePointLightingSetup != null) threePointLightingSetup.SetActive(false);
         if (inspectionUI != null) inspectionUI.Hide();
 
-        if (RadioDialogueManager.Instance != null)
+        if (RadioDialogueManager.Instance != null && !hasTriggeredRotationMonologue)
         {
             RadioDialogueManager.Instance.DismissDialogueImmediate();
         }
