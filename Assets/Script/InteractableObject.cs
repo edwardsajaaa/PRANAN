@@ -6,6 +6,12 @@ public enum ClueCategory
     Artificial
 }
 
+public enum PostInspectionRadioEvent
+{
+    None,
+    Clue02_EbonyStump
+}
+
 public class InteractableObject : MonoBehaviour
 {
     [Header("Clue Information")]
@@ -44,6 +50,10 @@ public class InteractableObject : MonoBehaviour
     [Tooltip("Total sudut putaran (derajat) yang dibutuhkan di Clue Inspector sebelum monolog muncul")]
     public float requiredInspectionRotationAngle = 120f;
     public bool trigger3DInspection = true;
+
+    [Header("Dialog Radio Setelah Inspeksi (Opsional)")]
+    [Tooltip("Jika dipilih, memicu dialog radio Rangga & Nadia setelah player selesai memeriksa clue ini dan keluar dari Clue Inspector")]
+    public PostInspectionRadioEvent postInspectionRadio = PostInspectionRadioEvent.None;
 
     [Header("Proximity Monologue (Memicu Saat Mendekat)")]
     [Tooltip("Jika dicentang, monolog batin otomatis muncul satu kali saat player berjalan mendekati objek ini")]

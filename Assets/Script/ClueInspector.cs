@@ -58,6 +58,8 @@ public class ClueInspector : MonoBehaviour
     private float currentZoom;
     private float accumulatedRotationAngle = 0f;
     private bool hasTriggeredRotationMonologue = false;
+    private bool hasDiscoveredHotspotThisInspection = false;
+    private bool hasTriggeredHotspotMonologue = false;
     private bool isDragging = false;
     private bool isInspecting = false;
     private bool isTransitioning = false;
@@ -105,6 +107,8 @@ public class ClueInspector : MonoBehaviour
         isClosing = false;
         accumulatedRotationAngle = 0f;
         hasTriggeredRotationMonologue = false;
+        hasDiscoveredHotspotThisInspection = false;
+        hasTriggeredHotspotMonologue = false;
 
         if (modelHolder != null)
         {
@@ -646,6 +650,7 @@ public class ClueInspector : MonoBehaviour
 
     private void OnHotspotDiscovered(AnomalyHotspot hotspot)
     {
+        hasDiscoveredHotspotThisInspection = true;
         Debug.Log($"[ClueInspector] Anomali terdeteksi: {hotspot.anomalyTitle}");
         if (inspectionUI != null)
         {
@@ -654,6 +659,7 @@ public class ClueInspector : MonoBehaviour
 
         if (!string.IsNullOrEmpty(hotspot.discoveryMonologue) && RadioDialogueManager.Instance != null)
         {
+            hasTriggeredHotspotMonologue = true;
             RadioDialogueManager.Instance.ShowMonologue(hotspot.discoveryMonologue, hotspot.discoveryMonologueDuration);
         }
 
@@ -889,7 +895,8 @@ public class ClueInspector : MonoBehaviour
         if (threePointLightingSetup != null) threePointLightingSetup.SetActive(false);
         if (inspectionUI != null) inspectionUI.Hide();
 
-        if (RadioDialogueManager.Instance != null && !hasTriggeredRotationMonologue)
+        bool keepMonologueAlive = hasTriggeredRotationMonologue || hasTriggeredHotspotMonologue;
+        if (RadioDialogueManager.Instance != null && !keepMonologueAlive)
         {
             RadioDialogueManager.Instance.DismissDialogueImmediate();
         }
@@ -913,9 +920,21 @@ public class ClueInspector : MonoBehaviour
             cachedMainCamera = null;
         }
 
+        InteractableObject finishedClue = activeClue;
+        bool inspectedThoroughly = hasDiscoveredHotspotThisInspection || hasTriggeredRotationMonologue || currentHotspots.Count == 0;
+        activeClue = null;
+
         if (GameStateManager.Instance != null)
         {
             GameStateManager.Instance.SetState(GameState.Exploration);
+        }
+
+        if (inspectedThoroughly && finishedClue != null && RadioDialogueManager.Instance != null)
+        {
+            if (finishedClue.postInspectionRadio == PostInspectionRadioEvent.Clue02_EbonyStump)
+            {
+                RadioDialogueManager.Instance.PlayClue02EbonyStumpRadio(true);
+            }
         }
     }
 }

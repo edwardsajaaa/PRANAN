@@ -55,6 +55,7 @@ public class RadioDialogueManager : MonoBehaviour
 
     private Coroutine activeDialogueRoutine;
     private bool hasPlayedScene1 = false;
+    private bool hasPlayedClue02Radio = false;
 
     private void Awake()
     {
@@ -163,6 +164,54 @@ public class RadioDialogueManager : MonoBehaviour
                 speaker = "Rangga",
                 text = "Siap. Angin ribut nggak mungkin ngebotakin hutan seluas itu dalam dua minggu. Aku jalan masuk sekarang.",
                 duration = 4.5f
+            }
+        };
+
+        StartDialogueSequence(lines);
+    }
+
+    public void PlayClue02EbonyStumpRadio(bool waitForCurrentMonologue = true)
+    {
+        if (hasPlayedClue02Radio) return;
+        hasPlayedClue02Radio = true;
+        StartCoroutine(PlayClue02RadioRoutine(waitForCurrentMonologue));
+    }
+
+    private IEnumerator PlayClue02RadioRoutine(bool waitForCurrentMonologue)
+    {
+        if (waitForCurrentMonologue)
+        {
+            while (activeDialogueRoutine != null)
+            {
+                yield return null;
+            }
+            yield return new WaitForSecondsRealtime(0.45f);
+        }
+        else
+        {
+            yield return new WaitForSecondsRealtime(0.5f);
+        }
+
+        if (radioStaticSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(radioStaticSound, 0.7f);
+            yield return new WaitForSecondsRealtime(0.35f);
+        }
+
+        List<RadioDialogueLine> lines = new List<RadioDialogueLine>
+        {
+            new RadioDialogueLine
+            {
+                speaker = "Rangga",
+                text = "Nad, alasan bencana alam mereka bohong besar. Di depan mata aku sekarang ada puluhan tunggul kayu eboni bekas ditebang pakai gergaji mesin. Gara-gara pohon besarnya ditebang habis, tudung hutannya kebuka dan tanah di bawahnya jadi kering kerontang kepanggang matahari.",
+                duration = 9.0f
+            },
+            new RadioDialogueLine
+            {
+                speaker = "Nadia (Radio)",
+                text = "Tuh kan, bener dugaan kita! Di laporan STADI 2025 juga dijelasin, hutan tropis kita itu aslinya lembap dan tahan api. Tapi kalau kanopi pohonnya ditebang paksa kayak gitu pas kemarau panjang, lantai hutannya jadi kering dan gampang banget meledak jadi kebakaran hutan! Simpan fotonya ke jurnal, Ga. Cari tahu ke mana kayu-kayu itu diangkut!",
+                duration = 10.5f,
+                audioClip = radioStaticSound
             }
         };
 
