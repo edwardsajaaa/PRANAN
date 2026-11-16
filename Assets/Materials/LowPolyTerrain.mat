@@ -28,7 +28,7 @@ Material:
     - _HeightMax: 40
     - _HeightMin: 0
     - _LightIntensity: 1.15
-    - _PathTextureBlend: 0.7
+    - _PathTextureBlend: 0.9
     - _PathTiling: 0.25
     - _SlopeSmoothness: 0.12
     - _SlopeThreshold: 0.55
