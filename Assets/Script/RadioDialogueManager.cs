@@ -181,16 +181,21 @@ public class RadioDialogueManager : MonoBehaviour
     {
         if (waitForCurrentMonologue)
         {
-            while (activeDialogueRoutine != null)
+            float maxWait = 1.2f;
+            float waited = 0f;
+            while (activeDialogueRoutine != null && waited < maxWait)
             {
+                waited += Time.unscaledDeltaTime;
                 yield return null;
             }
-            yield return new WaitForSecondsRealtime(0.45f);
+            yield return new WaitForSecondsRealtime(0.25f);
         }
         else
         {
             yield return new WaitForSecondsRealtime(0.5f);
         }
+
+        Debug.Log("[RadioDialogue] Memulai dialog radio CLUE-02 Tunggul Eboni...");
 
         if (radioStaticSound != null && audioSource != null)
         {
