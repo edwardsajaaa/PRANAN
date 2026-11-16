@@ -26,6 +26,12 @@ public class FogZone : MonoBehaviour
     [Tooltip("Durasi transisi perubahan kabut dalam detik")]
     [SerializeField] private float transitionDuration = 2.5f;
 
+    [Header("Dialog Zona Kabut")]
+    [Tooltip("Jika dicentang, otomatis memicu monolog batin Rangga dan dialog radio Nadia saat pertama kali memasuki zona ini")]
+    [SerializeField] private bool triggerFogZoneDialogue = true;
+
+    private bool hasTriggeredDialogue = false;
+
     public static float CurrentVolumetricMultiplier { get; private set; } = 1.0f;
     public static event System.Action<float> OnVolumetricMultiplierChanged;
 
@@ -64,6 +70,15 @@ public class FogZone : MonoBehaviour
 
         Color col = overrideColor ? targetColor : RenderSettings.fogColor;
         StartFogTransition(targetStartDistance, targetEndDistance, targetDensity, col, targetVolumetricMultiplier, transitionDuration);
+
+        if (triggerFogZoneDialogue && !hasTriggeredDialogue)
+        {
+            hasTriggeredDialogue = true;
+            if (RadioDialogueManager.Instance != null)
+            {
+                RadioDialogueManager.Instance.PlayFogZoneDialogue();
+            }
+        }
     }
 
     private void OnTriggerExit(Collider other)
