@@ -17,10 +17,12 @@ Shader "Custom/LowPolyTerrain"
         [HideInInspector] _Control ("Control (RGBA)", 2D) = "red" {}
         [HideInInspector] _Splat0 ("Layer 0 (Base)", 2D) = "white" {}
         [HideInInspector] _Splat1 ("Layer 1 (Path)", 2D) = "white" {}
+        [HideInInspector] _Splat2 ("Layer 2", 2D) = "white" {}
+        [HideInInspector] _Splat3 ("Layer 3", 2D) = "white" {}
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" "Queue"="Geometry" }
+        Tags { "RenderType"="Opaque" "Queue"="Geometry-100" "SplatCount"="4" "TerrainCompatible"="True" }
         LOD 200
 
         Pass
