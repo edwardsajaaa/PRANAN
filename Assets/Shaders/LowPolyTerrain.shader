@@ -99,12 +99,12 @@ Shader "Custom/LowPolyTerrain"
 
                 // Blend painted path/trail from Unity Terrain Splatmap
                 fixed4 splat = tex2D(_Control, i.uv);
-                float pathWeight = saturate(splat.g + splat.b + splat.a);
+                float pathWeight = saturate((splat.g + splat.b + splat.a) * 1.5);
 
                 // Sample texture Layer 1 (dirt / mud path) using world-space XZ UV coords
                 float2 pathUV = i.worldPos.xz * _PathTiling;
                 fixed3 pathTex = tex2D(_Splat1, pathUV).rgb;
-                fixed3 pathCol = lerp(_PathColor.rgb, pathTex * 1.25, _PathTextureBlend);
+                fixed3 pathCol = lerp(_PathColor.rgb, pathTex * 1.8, _PathTextureBlend);
                 baseAlbedo = lerp(baseAlbedo, pathCol, pathWeight);
 
                 float3 lightDir = normalize(_WorldSpaceLightPos0.xyz);
@@ -200,12 +200,12 @@ Shader "Custom/LowPolyTerrain"
 
                 // Blend painted path/trail from Unity Terrain Splatmap
                 fixed4 splat = tex2D(_Control, i.uv);
-                float pathWeight = saturate(splat.g + splat.b + splat.a);
+                float pathWeight = saturate((splat.g + splat.b + splat.a) * 1.5);
 
                 // Sample texture Layer 1 (dirt / mud path) using world-space XZ UV coords
                 float2 pathUV = i.worldPos.xz * _PathTiling;
                 fixed3 pathTex = tex2D(_Splat1, pathUV).rgb;
-                fixed3 pathCol = lerp(_PathColor.rgb, pathTex * 1.25, _PathTextureBlend);
+                fixed3 pathCol = lerp(_PathColor.rgb, pathTex * 1.8, _PathTextureBlend);
                 baseAlbedo = lerp(baseAlbedo, pathCol, pathWeight);
 
                 #if defined(POINT) || defined(SPOT) || defined(POINT_COOKIE)
