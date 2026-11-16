@@ -65,7 +65,7 @@ public class PlayerInteract : MonoBehaviour
             if (hit.collider.transform.root == transform.root) continue;
 
             InteractableObject directInteractable = hit.collider.GetComponentInParent<InteractableObject>();
-            if (directInteractable != null)
+            if (directInteractable != null && !directInteractable.IsInspectionCompleted)
             {
                 if (directInteractable.IsInInteractionRange(hit.collider, camPos, transform.position))
                 {
@@ -85,7 +85,7 @@ public class PlayerInteract : MonoBehaviour
                 if (hit.collider.transform.root == transform.root) continue;
 
                 InteractableObject directInteractable = hit.collider.GetComponentInParent<InteractableObject>();
-                if (directInteractable != null)
+                if (directInteractable != null && !directInteractable.IsInspectionCompleted)
                 {
                     if (directInteractable.IsInInteractionRange(hit.collider, camPos, transform.position))
                     {

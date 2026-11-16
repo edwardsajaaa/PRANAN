@@ -55,6 +55,9 @@ public class InteractableObject : MonoBehaviour
     [Tooltip("Jika dipilih, memicu dialog radio Rangga & Nadia setelah player selesai memeriksa clue ini dan keluar dari Clue Inspector")]
     public PostInspectionRadioEvent postInspectionRadio = PostInspectionRadioEvent.None;
 
+    [Tooltip("Jika dicentang, objek tidak bisa di-interact lagi setelah selesai diperiksa")]
+    public bool disableAfterInspection = false;
+
     [Header("Proximity Monologue (Memicu Saat Mendekat)")]
     [Tooltip("Jika dicentang, monolog batin otomatis muncul satu kali saat player berjalan mendekati objek ini")]
     public bool triggerOnApproach = true;
@@ -78,7 +81,13 @@ public class InteractableObject : MonoBehaviour
     private bool isOrbitUnlocked = false;
     private bool hasTriggeredApproach = false;
 
-    public bool CanInteract => !requireOrbitBeforeInteract || isOrbitUnlocked;
+    public bool IsInspectionCompleted { get; private set; } = false;
+    public bool CanInteract => !IsInspectionCompleted && (!requireOrbitBeforeInteract || isOrbitUnlocked);
+
+    public void MarkInspectionCompleted()
+    {
+        IsInspectionCompleted = true;
+    }
 
     public float OrbitProgressNormalized
     {

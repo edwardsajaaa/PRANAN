@@ -929,14 +929,19 @@ public class ClueInspector : MonoBehaviour
             GameStateManager.Instance.SetState(GameState.Exploration);
         }
 
-        if (inspectedThoroughly && finishedClue != null && RadioDialogueManager.Instance != null)
+        if (inspectedThoroughly && finishedClue != null)
         {
             bool isEbonyStump = finishedClue.postInspectionRadio == PostInspectionRadioEvent.Clue02_EbonyStump
                 || (hasDiscoveredHotspotThisInspection &&
                     (finishedClue.gameObject.name.IndexOf("EbonyStump", System.StringComparison.OrdinalIgnoreCase) >= 0
                      || finishedClue.clueName.IndexOf("eboni", System.StringComparison.OrdinalIgnoreCase) >= 0));
 
-            if (isEbonyStump)
+            if (finishedClue.disableAfterInspection || isEbonyStump || finishedClue.postInspectionRadio != PostInspectionRadioEvent.None)
+            {
+                finishedClue.MarkInspectionCompleted();
+            }
+
+            if (isEbonyStump && RadioDialogueManager.Instance != null)
             {
                 RadioDialogueManager.Instance.PlayClue02EbonyStumpRadio(true);
             }
