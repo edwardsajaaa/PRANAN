@@ -72,21 +72,21 @@ public class InspectionUI : MonoBehaviour
                 {
                     if (closeRect != null)
                     {
-                        closeRect.anchoredPosition = new Vector2(-110, 45);
-                        closeRect.sizeDelta = new Vector2(200, 45);
+                        closeRect.anchoredPosition = new Vector2(-110, 32);
+                        closeRect.sizeDelta = new Vector2(200, 42);
                     }
                     if (collectRect != null)
                     {
-                        collectRect.anchoredPosition = new Vector2(110, 45);
-                        collectRect.sizeDelta = new Vector2(200, 45);
+                        collectRect.anchoredPosition = new Vector2(110, 32);
+                        collectRect.sizeDelta = new Vector2(200, 42);
                     }
                 }
                 else
                 {
                     if (closeRect != null)
                     {
-                        closeRect.anchoredPosition = new Vector2(0, 45);
-                        closeRect.sizeDelta = new Vector2(240, 45);
+                        closeRect.anchoredPosition = new Vector2(0, 32);
+                        closeRect.sizeDelta = new Vector2(240, 42);
                     }
                 }
             }

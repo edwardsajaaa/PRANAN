@@ -369,8 +369,8 @@ public class ClueInspector : MonoBehaviour
         var titleRect = titleObj.AddComponent<RectTransform>();
         titleRect.anchorMin = new Vector2(0.5f, 1f);
         titleRect.anchorMax = new Vector2(0.5f, 1f);
-        titleRect.anchoredPosition = new Vector2(0, -60);
-        titleRect.sizeDelta = new Vector2(600, 50);
+        titleRect.anchoredPosition = new Vector2(0, -48);
+        titleRect.sizeDelta = new Vector2(680, 44);
         var titleTmp = titleObj.AddComponent<TMPro.TextMeshProUGUI>();
         titleTmp.alignment = TMPro.TextAlignmentOptions.Center;
         titleTmp.fontSize = 28;
@@ -383,24 +383,24 @@ public class ClueInspector : MonoBehaviour
         var descRect = descObj.AddComponent<RectTransform>();
         descRect.anchorMin = new Vector2(0.5f, 1f);
         descRect.anchorMax = new Vector2(0.5f, 1f);
-        descRect.anchoredPosition = new Vector2(0, -110);
-        descRect.sizeDelta = new Vector2(700, 60);
+        descRect.anchoredPosition = new Vector2(0, -94);
+        descRect.sizeDelta = new Vector2(760, 50);
         var descTmp = descObj.AddComponent<TMPro.TextMeshProUGUI>();
         descTmp.alignment = TMPro.TextAlignmentOptions.Center;
-        descTmp.fontSize = 18;
+        descTmp.fontSize = 17;
         descTmp.color = new Color(0.85f, 0.85f, 0.85f);
         ui.descriptionText = descTmp;
 
         GameObject statusObj = new GameObject("StatusLogText");
         statusObj.transform.SetParent(panel.transform, false);
         var statusRect = statusObj.AddComponent<RectTransform>();
-        statusRect.anchorMin = new Vector2(0.5f, 0f);
-        statusRect.anchorMax = new Vector2(0.5f, 0f);
-        statusRect.anchoredPosition = new Vector2(0, 100);
-        statusRect.sizeDelta = new Vector2(800, 60);
+        statusRect.anchorMin = new Vector2(0.5f, 1f);
+        statusRect.anchorMax = new Vector2(0.5f, 1f);
+        statusRect.anchoredPosition = new Vector2(0, -152);
+        statusRect.sizeDelta = new Vector2(780, 52);
         var statusTmp = statusObj.AddComponent<TMPro.TextMeshProUGUI>();
         statusTmp.alignment = TMPro.TextAlignmentOptions.Center;
-        statusTmp.fontSize = 18;
+        statusTmp.fontSize = 15;
         statusTmp.color = Color.white;
         ui.statusLogText = statusTmp;
 
@@ -409,8 +409,8 @@ public class ClueInspector : MonoBehaviour
         var closeRect = closeObj.AddComponent<RectTransform>();
         closeRect.anchorMin = new Vector2(0.5f, 0f);
         closeRect.anchorMax = new Vector2(0.5f, 0f);
-        closeRect.anchoredPosition = new Vector2(0, 45);
-        closeRect.sizeDelta = new Vector2(240, 45);
+        closeRect.anchoredPosition = new Vector2(0, 32);
+        closeRect.sizeDelta = new Vector2(240, 42);
         var closeImg = closeObj.AddComponent<UnityEngine.UI.Image>();
         closeImg.color = new Color(0.2f, 0.2f, 0.25f, 0.85f);
         var closeBtn = closeObj.AddComponent<UnityEngine.UI.Button>();
