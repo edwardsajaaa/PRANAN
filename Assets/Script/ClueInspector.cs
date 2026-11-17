@@ -931,17 +931,12 @@ public class ClueInspector : MonoBehaviour
 
         if (inspectedThoroughly && finishedClue != null)
         {
-            bool isEbonyStump = finishedClue.postInspectionRadio == PostInspectionRadioEvent.Clue02_EbonyStump
-                || (hasDiscoveredHotspotThisInspection &&
-                    (finishedClue.gameObject.name.IndexOf("EbonyStump", System.StringComparison.OrdinalIgnoreCase) >= 0
-                     || finishedClue.clueName.IndexOf("eboni", System.StringComparison.OrdinalIgnoreCase) >= 0));
-
-            if (finishedClue.disableAfterInspection || isEbonyStump || finishedClue.postInspectionRadio != PostInspectionRadioEvent.None)
+            if (finishedClue.disableAfterInspection)
             {
                 finishedClue.MarkInspectionCompleted();
             }
 
-            if (isEbonyStump && RadioDialogueManager.Instance != null)
+            if (finishedClue.postInspectionRadio == PostInspectionRadioEvent.Clue02_EbonyStump && RadioDialogueManager.Instance != null)
             {
                 RadioDialogueManager.Instance.PlayClue02EbonyStumpRadio(true);
             }

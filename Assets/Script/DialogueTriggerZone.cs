@@ -12,6 +12,7 @@ public class DialogueTriggerZone : MonoBehaviour
     public enum TriggerType
     {
         Scene1GerbangPos,
+        Clue02TunggulEboni,
         CustomMonologue,
         CustomEventOnly
     }
@@ -77,6 +78,17 @@ public class DialogueTriggerZone : MonoBehaviour
                 if (RadioDialogueManager.Instance != null)
                 {
                     RadioDialogueManager.Instance.TryTriggerScene1();
+                }
+                else
+                {
+                    Debug.LogWarning("[DialogueTriggerZone] RadioDialogueManager.Instance tidak ditemukan di scene!");
+                }
+                break;
+
+            case TriggerType.Clue02TunggulEboni:
+                if (RadioDialogueManager.Instance != null)
+                {
+                    RadioDialogueManager.Instance.PlayClue02EbonyStumpRadio(false);
                 }
                 else
                 {
