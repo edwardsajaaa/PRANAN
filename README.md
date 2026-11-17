@@ -114,6 +114,40 @@ dotnet build Assembly-CSharp.csproj
 
 ## Catatan Perubahan (Changelog)
 
+### Versi 1.6.0 - Alur Investigasi Clue Lanjutan, Zona Kabut & Peningkatan Terrain
+- **Mekanik Investigasi & Interaksi Clue (`InteractableObject` & `ClueInspector`)**:
+  - Penambahan fitur `Require Orbit Before Interact` yang mewajibkan pemain berjalan mengelilingi objek terlebih dahulu sebelum interaksi `[E]` terbuka, lengkap dengan indikator progres persentase pada `ReticleUI`.
+  - Penambahan opsi `Trigger Monologue After Rotate` dan `Discovery Monologue` pada `AnomalyHotspot` untuk memicu monolog batin Rangga setelah memutar objek atau menemukan titik anomali.
+  - Penambahan opsi `Disable After Inspection` agar clue yang selesai diperiksa tidak dapat di-interact ulang.
+  - Penataan ulang tata letak UI `ClueInspector` dan `InspectionUI` (memindahkan status `[ANOMALI TERVERIFIKASI]` ke bagian atas layar) agar tidak bertumpuk dengan teks monolog di bawah.
+- **Narasi `CLUE-02` (Tunggul Eboni) & `Zona_Kabut_Tebal`**:
+  - Penambahan tipe `Clue02TunggulEboni` pada `DialogueTriggerZone` untuk memicu percakapan radio Rangga & Nadia melalui `BoxCollider` trigger di area hamparan tunggul kayu.
+  - Integrasi otomatis monolog batin Rangga dan dialog radio Nadia pada `FogZone` (`Zona_Kabut_Tebal`) saat pemain memasuki zona kabut asap tebal.
+- **Perbaikan Shader Jalan Setapak & Stabilitas Console**:
+  - Penambahan tag `TerrainCompatible` dan `SplatCount` pada `LowPolyTerrain.shader`, serta peningkatan sensitivitas dan keterlihatan tekstur Layer 1 (`_Splat1`) untuk jalan setapak di pencahayaan gelap.
+  - Perbaikan warning `AudioSource` pada `OnValidate` (`RoofWaterDripEmitter`) dan fallback `MeshCollider` non-convex (`InteractableObject`).
+
+### Versi 1.5.0 - Sistem Walkie-Talkie Prosedural & Komunikasi Radio
+- **Kontroler Walkie-Talkie (`WalkieTalkieController`)**:
+  - Kemunculan otomatis objek `PROP_Comms_WalkieTalkie` di tangan pemain saat komunikasi radio berlangsung (dan tersembunyi saat eksplorasi biasa, monolog batin, maupun mode inspeksi).
+  - Animasi prosedural mendekat ke kamera saat Rangga berbicara, menjauh sedikit saat mendengarkan Nadia, serta ayunan tangan (*hand sway*) dan napas halus.
+  - Fitur simpan pose visual langsung dari Inspector (*WYSIWYG Context Menu*) serta dukungan *Anchor Transform* opsional.
+- **Sinkronisasi Status Pembicara (`RadioDialogueManager`)**:
+  - Penambahan event `OnRadioStateChanged` (`None`, `Rangga`, `Nadia`) untuk menggerakkan animasi walkie-talkie secara sinkron dengan dialog.
+
+### Versi 1.4.0 - Atmosfer Hutan, Partikel Ambien Mikro & Polish Inspeksi 3D
+- **Partikel Ambien Mikro & Material Permanen**:
+  - Spora/debu hutan reaktif terhadap sorotan senter (`AmbientDustMotes` + `DustMoteParticle.shader`).
+  - Kunang-kunang malam di sekitar semak dan lampu pos jaga (`FireflyEmitter` + `SoftGlowParticle.shader`).
+  - Tetesan air atap seng pos jaga dengan audio 3D (`RoofWaterDripEmitter`) yang dikalibrasi ritmenya agar lebih atmosferik.
+- **Volumetric God Rays, Lampu Berayun & Jarak Render Hutan**:
+  - Integrasi berkas cahaya volumetrik (`VolumetricLightShaft`) dan animasi pendulum lampu gantung pos jaga (`SwingingHangingLamp`).
+  - Penghapusan kerucut kabut putih pada senter agar pandangan pemain tidak terhalang.
+  - Peningkatan jarak render pohon billboard (`500m`) dan batas LOD mesh (`TerrainVisibilityEnhancer`) agar hutan tetap lebat dari kejauhan.
+- **Polish Mode Clue Inspector 3D**:
+  - Pemisahan rotasi model dari kamera agar objek dapat diputar bebas, animasi transisi masuk/keluar, serta pembatasan jarak maksimal *zoom out* (`maxZoomRatio`) agar objek tetap proporsional.
+  - Pemusatan titik gizmo dan deteksi jarak `InteractableObject` ke tengah collider/targetPivot.
+
 ### Versi 1.3.1 - Pembaruan Polish Alur & Kontrol Narasi Prolog
 - **Mekanik Tahan Klik untuk Akselerasi Ketik (Hold to Accelerate)**:
   - Pemain dapat menahan klik kiri mouse atau tombol Spasi untuk mempercepat animasi kemunculan kata (~5x lebih cepat).
