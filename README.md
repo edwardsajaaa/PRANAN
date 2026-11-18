@@ -114,6 +114,11 @@ dotnet build Assembly-CSharp.csproj
 
 ## Catatan Perubahan (Changelog)
 
+### Versi 1.6.1 - Revisi Sekuens Narasi Zona Kabut & Jeda Monolog Pasca-Radio
+- **Pemisahan Monolog Batin & Jeda Pasca-Radio (`RadioDialogueManager`)**:
+  - Penambahan properti `postDelay` per baris dialog agar transisi antar-dialog mendukung jeda sinematik, serta otomatis menurunkan walkie-talkie selama jeda berlangsung.
+  - Pembaruan alur `PlayFogZoneDialogue()` pada `Zona_Kabut_Tebal`: Monolog pembuka *(Batuk-batuk)* -> Nadia (Via Radio) -> Rangga -> jeda **3,5 detik** -> Monolog Batin Rangga mengenai kondisi sungai kering, tumpahan solar hitam, dan pembakaran semak.
+
 ### Versi 1.6.0 - Alur Investigasi Clue Lanjutan, Zona Kabut & Peningkatan Terrain
 - **Mekanik Investigasi & Interaksi Clue (`InteractableObject` & `ClueInspector`)**:
   - Penambahan fitur `Require Orbit Before Interact` yang mewajibkan pemain berjalan mengelilingi objek terlebih dahulu sebelum interaksi `[E]` terbuka, lengkap dengan indikator progres persentase pada `ReticleUI`.

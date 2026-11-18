@@ -19,6 +19,7 @@ public class RadioDialogueLine
     [TextArea(2, 4)]
     public string text;
     public float duration = 4.5f;
+    public float postDelay = 0.2f;
     public AudioClip audioClip;
     public bool isMonologue = false;
 }
@@ -236,22 +237,32 @@ public class RadioDialogueManager : MonoBehaviour
             new RadioDialogueLine
             {
                 speaker = "Rangga (Batin)",
-                text = "Uhuk... Gila, kabut asapnya makin tebal di depan. Mata mulai perih, jarak pandang juga makin pendek. Burung-burung langsung nggak ada suaranya... Hutan di sini beneran mati. Air sungainya udah surut gara-gara kemarau, eh sisanya malah kecampur tumpahan solar dari drum besi bocor itu. Mana mereka buka jalur pakai cara bakar semak kering segala. Kena angin dikit aja, satu bukit ini bisa ludes kebakar!",
-                duration = 13.0f,
+                text = "(Batuk-batuk) Asapnya makin pekat banget di sini... Mataku sampai perih. Kabut sisa pembakaran lahan ini menutup pandangan, jarak tiga meter aja udah buram total. Benar-benar mencekam.",
+                duration = 7.5f,
+                postDelay = 0.3f,
                 isMonologue = true
             },
             new RadioDialogueLine
             {
                 speaker = "Nadia (Radio)",
                 text = "Rangga! Sensor kualitas udara di pos pantau menunjukkan indeks bahaya di area kamu! Asap tebal itu makin meluas karena angin kemarau. Kamu masih bisa napas, kan? Hati-hati, jarak pandang buruk banget itu!",
-                duration = 9.5f,
+                duration = 9.0f,
+                postDelay = 0.2f,
                 audioClip = radioStaticSound
             },
             new RadioDialogueLine
             {
                 speaker = "Rangga",
-                text = "Uhuk masih, Nad... tapi abu sama baunya menyengat banget. Jelas ini bukan asap biasa, mereka sengaja ngebakar semak buat membuka jalur alat berat secara instan tanpa peduli dampaknya! Ini aku lagi ngikutin bekas jejak ban rantai ekskavator di lumpur sungai kering.",
-                duration = 10.5f
+                text = "Masih, Nad... tapi abu sama baunya menyengat banget. Jelas ini bukan asap biasa, mereka sengaja ngebakar semak buat membuka jalur secara instan tanpa peduli dampaknya!",
+                duration = 7.5f,
+                postDelay = 3.5f
+            },
+            new RadioDialogueLine
+            {
+                speaker = "Rangga (Batin)",
+                text = "Burung-burung langsung nggak ada suaranya... Hutan di sini beneran mati. Air sungainya udah surut gara-gara kemarau, eh sisanya malah kecampur tumpahan solar hitam. Mana mereka buka jalur pakai cara bakar semak kering segala. Kena angin dikit aja, satu bukit ini bisa ludes kebakar!",
+                duration = 10.5f,
+                isMonologue = true
             }
         };
 
@@ -328,7 +339,16 @@ public class RadioDialogueManager : MonoBehaviour
             yield return new WaitForSecondsRealtime(line.duration);
 
             yield return StartCoroutine(FadeSubtitle(1f, 0f));
-            yield return new WaitForSecondsRealtime(0.2f);
+
+            if (line.postDelay > 0.5f)
+            {
+                SetRadioState(RadioSpeakerState.None);
+            }
+
+            if (line.postDelay > 0f)
+            {
+                yield return new WaitForSecondsRealtime(line.postDelay);
+            }
         }
 
         SetRadioState(RadioSpeakerState.None);
