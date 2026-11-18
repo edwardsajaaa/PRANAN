@@ -1192,9 +1192,17 @@ public class ClueInspector : MonoBehaviour
                 finishedClue.MarkInspectionCompleted();
             }
 
-            if (finishedClue.postInspectionRadio == PostInspectionRadioEvent.Clue02_EbonyStump && RadioDialogueManager.Instance != null)
+            if (RadioDialogueManager.Instance != null)
             {
-                RadioDialogueManager.Instance.PlayClue02EbonyStumpRadio(true);
+                if (finishedClue.postInspectionRadio == PostInspectionRadioEvent.Clue02_EbonyStump)
+                {
+                    RadioDialogueManager.Instance.PlayClue02EbonyStumpRadio(true);
+                }
+                else if (finishedClue.postInspectionRadio == PostInspectionRadioEvent.ExcavatorLogbook
+                         || finishedClue.gameObject.name.IndexOf("ExcavatorLogbook", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    RadioDialogueManager.Instance.PlayExcavatorLogbookRadio(true);
+                }
             }
         }
     }

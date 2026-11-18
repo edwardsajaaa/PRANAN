@@ -9,7 +9,8 @@ public enum ClueCategory
 public enum PostInspectionRadioEvent
 {
     None,
-    Clue02_EbonyStump
+    Clue02_EbonyStump,
+    ExcavatorLogbook
 }
 
 public class InteractableObject : MonoBehaviour

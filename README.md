@@ -114,6 +114,11 @@ dotnet build Assembly-CSharp.csproj
 
 ## Catatan Perubahan (Changelog)
 
+### Versi 1.7.5 - Dialog Radio Pasca-Inspeksi Buku Log Ekskavator
+- **Sekuens Radio Buku Log Ekskavator (`RadioDialogueManager`, `ClueInspector`, `InteractableObject`)**:
+  - Penambahan opsi `ExcavatorLogbook` pada `PostInspectionRadioEvent` dan fungsi `PlayExcavatorLogbookRadio()`.
+  - Setelah pemain memeriksa `PROP_Clue_ExcavatorLogbook` (`Hotspot_NightShiftLog`) dan menutup Mode Clue Inspector, walkie-talkie otomatis muncul untuk memutar laporan Rangga mengenai ekskavator tersembunyi tanpa pelat nomor dan arahan Nadia menuju area kemah mandor.
+
 ### Versi 1.7.4 - Penyelarasan Sekuens Dialog Zona_Kabut_Tebal
 - **Pembaruan Dialog `Zona_Kabut_Tebal` (`RadioDialogueManager`)**:
   - Memindahkan sekuens 3 baris dialog lengkap (Monolog Batin Rangga mengenai kabut asap, ekosistem mati, dan drum solar -> Nadia via Radio -> balasan Rangga mengikuti jejak ban rantai ekskavator) ke `PlayFogZoneDialogue()` yang aktif otomatis saat memasuki `Zona_Kabut_Tebal`.

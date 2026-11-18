@@ -58,6 +58,7 @@ public class RadioDialogueManager : MonoBehaviour
     private bool hasPlayedScene1 = false;
     private bool hasPlayedClue02Radio = false;
     private bool hasPlayedFogZoneDialogue = false;
+    private bool hasPlayedLogbookRadio = false;
 
     private void Awake()
     {
@@ -256,6 +257,61 @@ public class RadioDialogueManager : MonoBehaviour
                 text = "Uhuk masih, Nad... tapi abu sama baunya menyengat banget. Jelas ini bukan asap biasa, mereka sengaja ngebakar semak buat membuka jalur alat berat secara instan tanpa peduli dampaknya! Ini aku lagi ngikutin bekas jejak ban rantai ekskavator di lumpur sungai kering.",
                 duration = 10.5f,
                 postDelay = 0.2f
+            }
+        };
+
+        StartDialogueSequence(lines);
+    }
+
+    public void PlayExcavatorLogbookRadio(bool waitForCurrentMonologue = true)
+    {
+        if (hasPlayedLogbookRadio) return;
+        hasPlayedLogbookRadio = true;
+        StartCoroutine(PlayExcavatorLogbookRoutine(waitForCurrentMonologue));
+    }
+
+    private IEnumerator PlayExcavatorLogbookRoutine(bool waitForCurrentMonologue)
+    {
+        if (waitForCurrentMonologue)
+        {
+            float maxWait = 4.0f;
+            float waited = 0f;
+            while (activeDialogueRoutine != null && waited < maxWait)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+            yield return new WaitForSecondsRealtime(0.45f);
+        }
+        else
+        {
+            yield return new WaitForSecondsRealtime(0.5f);
+        }
+
+        Debug.Log("[RadioDialogue] Memulai dialog radio Buku Log Ekskavator...");
+
+        if (radioStaticSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(radioStaticSound, 0.7f);
+            yield return new WaitForSecondsRealtime(0.35f);
+        }
+
+        List<RadioDialogueLine> lines = new List<RadioDialogueLine>
+        {
+            new RadioDialogueLine
+            {
+                speaker = "Rangga",
+                text = "Nad, ketemu! Ada ekskavator kuning disembunyiin di balik terpal robek di ceruk tebing. Pelat nomornya dicopot, dan dari buku lognya ketahuan mereka ngangkut kayu ratusan kubik tiap tengah malam.",
+                duration = 9.0f,
+                postDelay = 0.25f
+            },
+            new RadioDialogueLine
+            {
+                speaker = "Nadia (Radio)",
+                text = "Gila, terorganisir banget! Di depan kamu sekitar seratus meter ada area kemah pekerja. Bau solar sama asap pembakarannya mengarah ke sana pasti tenda mandornya udah dekat!",
+                duration = 8.5f,
+                postDelay = 0.2f,
+                audioClip = radioStaticSound
             }
         };
 
