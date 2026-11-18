@@ -114,6 +114,11 @@ dotnet build Assembly-CSharp.csproj
 
 ## Catatan Perubahan (Changelog)
 
+### Versi 1.7.4 - Penyelarasan Sekuens Dialog Zona_Kabut_Tebal
+- **Pembaruan Dialog `Zona_Kabut_Tebal` (`RadioDialogueManager`)**:
+  - Memindahkan sekuens 3 baris dialog lengkap (Monolog Batin Rangga mengenai kabut asap, ekosistem mati, dan drum solar -> Nadia via Radio -> balasan Rangga mengikuti jejak ban rantai ekskavator) ke `PlayFogZoneDialogue()` yang aktif otomatis saat memasuki `Zona_Kabut_Tebal`.
+  - Membersihkan opsi duplikat `HutanTebang` pada `DialogueTriggerZone`.
+
 ### Versi 1.7.3 - Penambahan Sekuens Dialog Trigger_Hutan_Tebang
 - **Trigger Dialog Hutan Tebang (`DialogueTriggerZone` & `RadioDialogueManager`)**:
   - Penambahan opsi `HutanTebang` pada `DialogueTriggerZone` dan fungsi `PlayHutanTebangDialogue()` pada `RadioDialogueManager`.
