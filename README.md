@@ -114,6 +114,12 @@ dotnet build Assembly-CSharp.csproj
 
 ## Catatan Perubahan (Changelog)
 
+### Versi 1.6.2 - Perbaikan Deteksi Collider & Interaksi Clue Tipis
+- **Auto-Collider pada `InteractableObject`**:
+  - Penambahan `EnsureColliderExists()` saat `Awake()` agar prop clue tipis (seperti `PROP_Clue_ExcavatorLogbook`) yang belum memiliki collider fisik otomatis dibuatkan `BoxCollider` sesuai batas mesh-nya.
+- **Toleransi Permukaan Tipis pada `PlayerInteract`**:
+  - Penambahan toleransi jarak `0.15m` pada *SphereCast* cadangan agar objek tipis yang diletakkan rata di atas tunggul atau meja tetap mudah dideteksi tanpa terhalang permukaan di bawahnya.
+
 ### Versi 1.6.1 - Revisi Sekuens Narasi Zona Kabut & Jeda Monolog Pasca-Radio
 - **Pemisahan Monolog Batin & Jeda Pasca-Radio (`RadioDialogueManager`)**:
   - Penambahan properti `postDelay` per baris dialog agar transisi antar-dialog mendukung jeda sinematik, serta otomatis menurunkan walkie-talkie selama jeda berlangsung.

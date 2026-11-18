@@ -80,9 +80,19 @@ public class PlayerInteract : MonoBehaviour
             RaycastHit[] sphereHits = Physics.SphereCastAll(centerRay, 0.05f, maxVisionDist, occlusionMask, QueryTriggerInteraction.Ignore);
             System.Array.Sort(sphereHits, (a, b) => a.distance.CompareTo(b.distance));
 
+            float firstSurfaceDistance = -1f;
             foreach (var hit in sphereHits)
             {
                 if (hit.collider.transform.root == transform.root) continue;
+
+                if (firstSurfaceDistance < 0f)
+                {
+                    firstSurfaceDistance = hit.distance;
+                }
+                else if (hit.distance - firstSurfaceDistance > 0.15f)
+                {
+                    break;
+                }
 
                 InteractableObject directInteractable = hit.collider.GetComponentInParent<InteractableObject>();
                 if (directInteractable != null && !directInteractable.IsInspectionCompleted)
@@ -90,9 +100,9 @@ public class PlayerInteract : MonoBehaviour
                     if (directInteractable.IsInInteractionRange(hit.collider, camPos, transform.position))
                     {
                         bestCandidate = directInteractable;
+                        break;
                     }
                 }
-                break;
             }
         }
 

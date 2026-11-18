@@ -99,6 +99,66 @@ public class InteractableObject : MonoBehaviour
         }
     }
 
+    private void Awake()
+    {
+        EnsureColliderExists();
+    }
+
+    private void EnsureColliderExists()
+    {
+        Collider[] existing = GetComponentsInChildren<Collider>();
+        for (int i = 0; i < existing.Length; i++)
+        {
+            if (existing[i] != null && !existing[i].isTrigger)
+            {
+                return;
+            }
+        }
+
+        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+        BoxCollider box = gameObject.AddComponent<BoxCollider>();
+        box.isTrigger = false;
+
+        if (renderers.Length > 0)
+        {
+            Bounds localBounds = new Bounds();
+            bool initialized = false;
+
+            foreach (Renderer r in renderers)
+            {
+                if (r is ParticleSystemRenderer) continue;
+                Bounds wb = r.bounds;
+                Vector3 ext = wb.extents;
+                for (int sx = -1; sx <= 1; sx += 2)
+                for (int sy = -1; sy <= 1; sy += 2)
+                for (int sz = -1; sz <= 1; sz += 2)
+                {
+                    Vector3 worldCorner = wb.center + new Vector3(ext.x * sx, ext.y * sy, ext.z * sz);
+                    Vector3 localCorner = transform.InverseTransformPoint(worldCorner);
+                    if (!initialized)
+                    {
+                        localBounds = new Bounds(localCorner, Vector3.zero);
+                        initialized = true;
+                    }
+                    else
+                    {
+                        localBounds.Encapsulate(localCorner);
+                    }
+                }
+            }
+
+            if (initialized)
+            {
+                Vector3 size = localBounds.size;
+                size.x = Mathf.Max(size.x, 0.1f);
+                size.y = Mathf.Max(size.y, 0.08f);
+                size.z = Mathf.Max(size.z, 0.1f);
+                box.center = localBounds.center;
+                box.size = size;
+            }
+        }
+    }
+
     private void Update()
     {
         if (requireOrbitBeforeInteract && !isOrbitUnlocked)
