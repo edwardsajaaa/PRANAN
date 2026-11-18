@@ -23,6 +23,8 @@ public class InteractableObject : MonoBehaviour
     [Header("Inspection Model Setup")]
     [Tooltip("Prefab atau GameObject 3D yang akan diisolasi di studio inspection. Jika kosong, objek ini/mesh-nya yang digunakan.")]
     public GameObject inspectionModelPrefab;
+    [Tooltip("Rotasi awal (Euler X, Y, Z) model saat pertama kali muncul di Mode Clue Inspector (misal Z=180 jika terbalik)")]
+    public Vector3 inspectionInitialEuler = Vector3.zero;
 
     [Header("Dynamic Interaction Range")]
     [Tooltip("Toleransi jarak berdiri pemain dari permukaan fisik collider objek (default: 2.2 meter).")]

@@ -934,8 +934,19 @@ public class ClueInspector : MonoBehaviour
         Vector3 startScale = Vector3.one * 0.72f;
         Vector3 endScale = Vector3.one;
 
-        Quaternion startRot = Quaternion.Euler(14f, -22f, 3.5f);
         Quaternion endRot = Quaternion.identity;
+        if (activeClue != null)
+        {
+            if (activeClue.inspectionInitialEuler != Vector3.zero)
+            {
+                endRot = Quaternion.Euler(activeClue.inspectionInitialEuler);
+            }
+            else if (activeClue.gameObject.name.IndexOf("ExcavatorLogbook", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                endRot = Quaternion.Euler(0f, 0f, 180f);
+            }
+        }
+        Quaternion startRot = endRot * Quaternion.Euler(14f, -22f, 3.5f);
 
         float startZoom = targetZoom * Mathf.Min(1.08f, maxZoomRatio);
 

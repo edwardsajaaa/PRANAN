@@ -114,6 +114,11 @@ dotnet build Assembly-CSharp.csproj
 
 ## Catatan Perubahan (Changelog)
 
+### Versi 1.7.2 - Pengaturan Orientasi Awal Model Clue Inspector
+- **Rotasi Awal Per-Clue (`InteractableObject` & `ClueInspector`)**:
+  - Penambahan parameter `inspectionInitialEuler` pada `InteractableObject` untuk mengatur sudut hadap awal objek saat memasuki Mode Clue Inspector.
+  - Penyesuaian otomatis orientasi awal `PROP_Clue_ExcavatorLogbook` sebesar 180° agar halaman buku log langsung tampil tegak dan mudah dibaca tanpa terbalik.
+
 ### Versi 1.7.1 - Peningkatan Kontras Visual Penanda Titik Anomali
 - **Latar Gelap Kontras Tinggi pada Marker Hotspot (`ClueInspector`)**:
   - Penambahan lingkaran latar gelap semi-transparan di belakang cincin target serta *pill badge* gelap di belakang teks **`[Klik] Periksa`** agar tetap sangat jelas terbaca baik di atas objek gelap maupun permukaan kertas terang (seperti `PROP_Clue_ExcavatorLogbook`).
