@@ -58,6 +58,7 @@ public class RadioDialogueManager : MonoBehaviour
     private bool hasPlayedScene1 = false;
     private bool hasPlayedClue02Radio = false;
     private bool hasPlayedFogZoneDialogue = false;
+    private bool hasPlayedHutanTebangDialogue = false;
 
     private void Awake()
     {
@@ -263,6 +264,43 @@ public class RadioDialogueManager : MonoBehaviour
                 text = "Burung-burung langsung nggak ada suaranya... Hutan di sini beneran mati. Air sungainya udah surut gara-gara kemarau, eh sisanya malah kecampur tumpahan solar hitam. Mana mereka buka jalur pakai cara bakar semak kering segala. Kena angin dikit aja, satu bukit ini bisa ludes kebakar!",
                 duration = 10.5f,
                 isMonologue = true
+            }
+        };
+
+        StartDialogueSequence(lines);
+    }
+
+    public void PlayHutanTebangDialogue()
+    {
+        if (hasPlayedHutanTebangDialogue) return;
+        hasPlayedHutanTebangDialogue = true;
+
+        Debug.Log("[RadioDialogue] Memulai monolog & dialog radio Trigger_Hutan_Tebang...");
+
+        List<RadioDialogueLine> lines = new List<RadioDialogueLine>
+        {
+            new RadioDialogueLine
+            {
+                speaker = "Rangga (Batin)",
+                text = "Uhuk... Gila, kabut asapnya makin tebal di depan. Mata mulai perih, jarak pandang juga makin pendek. Burung-burung langsung nggak ada suaranya... Hutan di sini beneran mati. Air sungainya udah surut gara-gara kemarau, eh sisanya malah kecampur tumpahan solar dari drum besi bocor itu. Mana mereka buka jalur pakai cara bakar semak kering segala. Kena angin dikit aja, satu bukit ini bisa ludes kebakar!",
+                duration = 13.0f,
+                postDelay = 0.2f,
+                isMonologue = true
+            },
+            new RadioDialogueLine
+            {
+                speaker = "Nadia (Radio)",
+                text = "Rangga! Sensor kualitas udara di pos pantau menunjukkan indeks bahaya di area kamu! Asap tebal itu makin meluas karena angin kemarau. Kamu masih bisa napas, kan? Hati-hati, jarak pandang buruk banget itu!",
+                duration = 9.5f,
+                postDelay = 0.2f,
+                audioClip = radioStaticSound
+            },
+            new RadioDialogueLine
+            {
+                speaker = "Rangga",
+                text = "Uhuk masih, Nad... tapi abu sama baunya menyengat banget. Jelas ini bukan asap biasa, mereka sengaja ngebakar semak buat membuka jalur alat berat secara instan tanpa peduli dampaknya! Ini aku lagi ngikutin bekas jejak ban rantai ekskavator di lumpur sungai kering.",
+                duration = 10.5f,
+                postDelay = 0.2f
             }
         };
 

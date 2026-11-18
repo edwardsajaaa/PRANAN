@@ -114,6 +114,11 @@ dotnet build Assembly-CSharp.csproj
 
 ## Catatan Perubahan (Changelog)
 
+### Versi 1.7.3 - Penambahan Sekuens Dialog Trigger_Hutan_Tebang
+- **Trigger Dialog Hutan Tebang (`DialogueTriggerZone` & `RadioDialogueManager`)**:
+  - Penambahan opsi `HutanTebang` pada `DialogueTriggerZone` dan fungsi `PlayHutanTebangDialogue()` pada `RadioDialogueManager`.
+  - Memainkan sekuens Monolog Batin Rangga mengenai kabut asap, matinya ekosistem hutan, serta tumpahan solar -> dialog radio Nadia -> balasan Rangga tentang jejak ban rantai ekskavator.
+
 ### Versi 1.7.2 - Pengaturan Orientasi Awal Model Clue Inspector
 - **Rotasi Awal Per-Clue (`InteractableObject` & `ClueInspector`)**:
   - Penambahan parameter `inspectionInitialEuler` pada `InteractableObject` untuk mengatur sudut hadap awal objek saat memasuki Mode Clue Inspector.
