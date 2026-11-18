@@ -68,6 +68,7 @@ public class ClueInspector : MonoBehaviour
     private readonly List<HotspotMarkerEntry> hotspotMarkers = new List<HotspotMarkerEntry>();
     private HotspotMarkerEntry pressedHotspotEntry = null;
     private static Sprite cachedRingSprite;
+    private static Sprite cachedDiscSprite;
 
     private Vector2 angularVelocity;
     private float currentZoom;
@@ -663,6 +664,7 @@ public class ClueInspector : MonoBehaviour
         if (inspectionUI == null || inspectionUI.inspectionPanel == null) return;
 
         Sprite ringSprite = GetRingSprite();
+        Sprite discSprite = GetDiscSprite();
         Transform uiParent = inspectionUI.inspectionPanel.transform;
 
         foreach (AnomalyHotspot hs in currentHotspots)
@@ -672,26 +674,52 @@ public class ClueInspector : MonoBehaviour
             GameObject root = new GameObject($"HotspotMarker_{hs.name}");
             root.transform.SetParent(uiParent, false);
             RectTransform rect = root.AddComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(36f, 36f);
+            rect.sizeDelta = new Vector2(44f, 44f);
 
-            UnityEngine.UI.Image ringImg = root.AddComponent<UnityEngine.UI.Image>();
+            UnityEngine.UI.Image bgImg = root.AddComponent<UnityEngine.UI.Image>();
+            bgImg.sprite = discSprite;
+            bgImg.raycastTarget = false;
+            bgImg.color = new Color(0.05f, 0.08f, 0.12f, 0.78f);
+
+            GameObject ringObj = new GameObject("Ring");
+            ringObj.transform.SetParent(root.transform, false);
+            RectTransform ringRect = ringObj.AddComponent<RectTransform>();
+            ringRect.anchorMin = Vector2.zero;
+            ringRect.anchorMax = Vector2.one;
+            ringRect.offsetMin = Vector2.zero;
+            ringRect.offsetMax = Vector2.zero;
+
+            UnityEngine.UI.Image ringImg = ringObj.AddComponent<UnityEngine.UI.Image>();
             ringImg.sprite = ringSprite;
             ringImg.raycastTarget = false;
-            ringImg.color = new Color(0.75f, 0.95f, 1f, 0.92f);
+            ringImg.color = new Color(1f, 0.82f, 0.18f, 1f);
+
+            GameObject pillObj = new GameObject("LabelPill");
+            pillObj.transform.SetParent(root.transform, false);
+            RectTransform pillRect = pillObj.AddComponent<RectTransform>();
+            pillRect.anchorMin = new Vector2(0.5f, 0f);
+            pillRect.anchorMax = new Vector2(0.5f, 0f);
+            pillRect.anchoredPosition = new Vector2(0f, -18f);
+            pillRect.sizeDelta = new Vector2(150f, 24f);
+
+            UnityEngine.UI.Image pillBg = pillObj.AddComponent<UnityEngine.UI.Image>();
+            pillBg.color = new Color(0.05f, 0.08f, 0.12f, 0.88f);
+            pillBg.raycastTarget = false;
 
             GameObject labelObj = new GameObject("Label");
-            labelObj.transform.SetParent(root.transform, false);
+            labelObj.transform.SetParent(pillObj.transform, false);
             RectTransform labelRect = labelObj.AddComponent<RectTransform>();
-            labelRect.anchorMin = new Vector2(0.5f, 0f);
-            labelRect.anchorMax = new Vector2(0.5f, 0f);
-            labelRect.anchoredPosition = new Vector2(0f, -18f);
-            labelRect.sizeDelta = new Vector2(180f, 24f);
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = Vector2.zero;
+            labelRect.offsetMax = Vector2.zero;
 
             TMPro.TextMeshProUGUI labelTmp = labelObj.AddComponent<TMPro.TextMeshProUGUI>();
-            labelTmp.text = "Klik untuk periksa";
-            labelTmp.fontSize = 13f;
+            labelTmp.text = "[Klik] Periksa";
+            labelTmp.fontSize = 13.5f;
+            labelTmp.fontStyle = TMPro.FontStyles.Bold;
             labelTmp.alignment = TMPro.TextAlignmentOptions.Center;
-            labelTmp.color = new Color(1f, 0.95f, 0.7f, 0.95f);
+            labelTmp.color = Color.white;
             labelTmp.raycastTarget = false;
 
             root.SetActive(false);
@@ -745,33 +773,40 @@ public class ClueInspector : MonoBehaviour
 
             if (entry.hotspot.isDiscovered)
             {
-                entry.ringImage.color = new Color(0.35f, 0.95f, 0.55f, 0.75f);
+                entry.ringImage.color = new Color(0.35f, 0.95f, 0.55f, 0.95f);
                 entry.rect.localScale = Vector3.one * 0.85f;
                 entry.labelText.text = "Terperiksa";
-                entry.labelText.color = new Color(0.45f, 1f, 0.65f, 0.85f);
+                entry.labelText.color = new Color(0.45f, 1f, 0.65f, 1f);
             }
             else
             {
-                float hitRadius = Mathf.Max(entry.hotspot.screenRadius * 0.65f, 34f);
-                bool isHovered = Vector2.Distance(mousePos, new Vector2(screenPos.x, screenPos.y)) <= hitRadius;
+                float hitRadius = Mathf.Max(entry.hotspot.screenRadius * 0.75f, 44f);
+                bool isHovered = IsCursorOverMarker(mousePos, screenPos, hitRadius);
 
                 if (isHovered)
                 {
-                    entry.ringImage.color = new Color(1f, 0.85f, 0.15f, 1f);
-                    entry.rect.localScale = Vector3.one * 1.25f;
+                    entry.ringImage.color = new Color(1f, 0.9f, 0.2f, 1f);
+                    entry.rect.localScale = Vector3.one * 1.2f;
                     entry.labelText.text = "Klik untuk periksa";
-                    entry.labelText.color = new Color(1f, 0.92f, 0.35f, 1f);
+                    entry.labelText.color = new Color(1f, 0.9f, 0.25f, 1f);
                 }
                 else
                 {
                     float pulse = 1f + 0.12f * Mathf.Sin(Time.unscaledTime * 4f);
-                    entry.ringImage.color = new Color(0.65f, 0.92f, 1f, 0.9f);
+                    entry.ringImage.color = new Color(0.25f, 0.9f, 1f, 1f);
                     entry.rect.localScale = Vector3.one * pulse;
-                    entry.labelText.text = "Periksa";
-                    entry.labelText.color = new Color(0.85f, 0.95f, 1f, 0.8f);
+                    entry.labelText.text = "[Klik] Periksa";
+                    entry.labelText.color = Color.white;
                 }
             }
         }
+    }
+
+    private bool IsCursorOverMarker(Vector2 cursorPos, Vector3 screenPos, float hitRadius)
+    {
+        float distRing = Vector2.Distance(cursorPos, new Vector2(screenPos.x, screenPos.y));
+        float distLabel = Vector2.Distance(cursorPos, new Vector2(screenPos.x, screenPos.y - 22f));
+        return distRing <= hitRadius || distLabel <= hitRadius;
     }
 
     private HotspotMarkerEntry TryFindHotspotAtCursor(Vector2 cursorPos)
@@ -784,12 +819,15 @@ public class ClueInspector : MonoBehaviour
             HotspotMarkerEntry entry = hotspotMarkers[i];
             if (entry == null || !entry.isVisible || entry.hotspot == null || entry.hotspot.isDiscovered) continue;
 
-            float hitRadius = Mathf.Max(entry.hotspot.screenRadius * 0.65f, 36f);
-            float dist = Vector2.Distance(cursorPos, new Vector2(entry.lastScreenPos.x, entry.lastScreenPos.y));
-            if (dist <= hitRadius && dist < closestDist)
+            float hitRadius = Mathf.Max(entry.hotspot.screenRadius * 0.75f, 44f);
+            if (IsCursorOverMarker(cursorPos, entry.lastScreenPos, hitRadius))
             {
-                closest = entry;
-                closestDist = dist;
+                float dist = Vector2.Distance(cursorPos, new Vector2(entry.lastScreenPos.x, entry.lastScreenPos.y));
+                if (dist < closestDist)
+                {
+                    closest = entry;
+                    closestDist = dist;
+                }
             }
         }
 
@@ -810,9 +848,9 @@ public class ClueInspector : MonoBehaviour
             for (int x = 0; x < size; x++)
             {
                 float dist = Vector2.Distance(new Vector2(x, y), new Vector2(center, center)) / center;
-                float ringAlpha = Mathf.SmoothStep(0f, 1f, 1f - Mathf.Abs(dist - 0.72f) / 0.14f);
-                float dotAlpha = Mathf.SmoothStep(0f, 1f, 1f - dist / 0.24f);
-                float alpha = Mathf.Clamp01(Mathf.Max(ringAlpha, dotAlpha * 0.95f));
+                float ringAlpha = Mathf.SmoothStep(0f, 1f, 1f - Mathf.Abs(dist - 0.70f) / 0.18f);
+                float dotAlpha = Mathf.SmoothStep(0f, 1f, 1f - dist / 0.28f);
+                float alpha = Mathf.Clamp01(Mathf.Max(ringAlpha, dotAlpha));
                 tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
             }
         }
@@ -820,6 +858,30 @@ public class ClueInspector : MonoBehaviour
         tex.Apply();
         cachedRingSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
         return cachedRingSprite;
+    }
+
+    private static Sprite GetDiscSprite()
+    {
+        if (cachedDiscSprite != null) return cachedDiscSprite;
+
+        const int size = 64;
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+
+        float center = (size - 1) * 0.5f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(center, center)) / center;
+                float alpha = Mathf.SmoothStep(0f, 1f, (0.94f - dist) / 0.08f);
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+            }
+        }
+
+        tex.Apply();
+        cachedDiscSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        return cachedDiscSprite;
     }
 
     private void OnHotspotDwellProgress(float progress)
