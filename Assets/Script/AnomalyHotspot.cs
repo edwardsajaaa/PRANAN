@@ -41,6 +41,28 @@ public class AnomalyHotspot : MonoBehaviour
         currentDwellTime = 0f;
     }
 
+    public bool TryGetScreenPosition(Camera inspectionCam, out Vector3 screenPos)
+    {
+        screenPos = Vector3.zero;
+        if (inspectionCam == null) return false;
+
+        Vector3 dirToCamera = (inspectionCam.transform.position - transform.position).normalized;
+        float dotProduct = Vector3.Dot(transform.forward, dirToCamera);
+        if (dotProduct < facingAngleDotThreshold) return false;
+
+        screenPos = inspectionCam.WorldToScreenPoint(transform.position);
+        return screenPos.z > 0f;
+    }
+
+    public void DiscoverImmediate()
+    {
+        if (isDiscovered) return;
+        isDiscovered = true;
+        currentDwellTime = requiredDwellTime;
+        OnDwellProgressChanged?.Invoke(1f);
+        OnDiscovered?.Invoke(this);
+    }
+
     public bool EvaluateObservation(Camera inspectionCam, Vector2 screenCenter)
     {
         if (isDiscovered) return true;

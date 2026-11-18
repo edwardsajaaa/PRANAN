@@ -114,6 +114,14 @@ dotnet build Assembly-CSharp.csproj
 
 ## Catatan Perubahan (Changelog)
 
+### Versi 1.7.0 - Interaksi Klik Titik Anomali & Peningkatan Zoom Clue Inspector
+- **Penanda Visual & Klik Titik Anomali (`ClueInspector` & `AnomalyHotspot`)**:
+  - Setiap titik `AnomalyHotspot` yang menghadap kamera kini menampilkan penanda cincin berdenyut (*pulsing target pin*) lengkap dengan petunjuk **`Klik untuk periksa`**.
+  - Pemain dapat langsung mengklik penanda tersebut untuk memverifikasi anomali dan memicu monolog batin tanpa harus menatap tengah layar secara pasif.
+  - Penambahan indikator status **`Terperiksa`** berwarna hijau setelah titik anomali diklik.
+- **Peningkatan Batas Zoom In Objek Kecil (`ClueInspector`)**:
+  - Penurunan `minZoomRatio` ke `0.28x`, `minZoomDistance` minimum ke `0.18m`, dan `nearClipPlane` kamera inspeksi ke `0.02m` dengan sensitivitas scroll proporsional agar detail tulisan kecil (seperti `PROP_Clue_ExcavatorLogbook`) dapat di-*zoom* jauh lebih dekat dan jelas.
+
 ### Versi 1.6.2 - Perbaikan Deteksi Collider & Interaksi Clue Tipis
 - **Auto-Collider pada `InteractableObject`**:
   - Penambahan `EnsureColliderExists()` saat `Awake()` agar prop clue tipis (seperti `PROP_Clue_ExcavatorLogbook`) yang belum memiliki collider fisik otomatis dibuatkan `BoxCollider` sesuai batas mesh-nya.

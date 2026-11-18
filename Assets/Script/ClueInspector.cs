@@ -38,8 +38,8 @@ public class ClueInspector : MonoBehaviour
     public float defaultZoomDistance = 2.5f;
 
     [Header("Zoom Ratio Limits")]
-    [Tooltip("Batas rasio zoom in terdekat terhadap ukuran ideal (0.45 = bisa perbesar 2.2x lebih dekat)")]
-    public float minZoomRatio = 0.45f;
+    [Tooltip("Batas rasio zoom in terdekat terhadap ukuran ideal (0.28 = bisa diperbesar cukup dekat untuk membaca detail teks)")]
+    public float minZoomRatio = 0.28f;
     [Tooltip("Batas rasio zoom out terjauh agar objek tetap proporsional & jelas terbaca (default: 1.12x)")]
     public float maxZoomRatio = 1.12f;
 
@@ -54,8 +54,24 @@ public class ClueInspector : MonoBehaviour
     private Transform modelHolder;
     private List<AnomalyHotspot> currentHotspots = new List<AnomalyHotspot>();
 
+    private class HotspotMarkerEntry
+    {
+        public AnomalyHotspot hotspot;
+        public GameObject root;
+        public RectTransform rect;
+        public UnityEngine.UI.Image ringImage;
+        public TMPro.TextMeshProUGUI labelText;
+        public Vector3 lastScreenPos;
+        public bool isVisible;
+    }
+
+    private readonly List<HotspotMarkerEntry> hotspotMarkers = new List<HotspotMarkerEntry>();
+    private HotspotMarkerEntry pressedHotspotEntry = null;
+    private static Sprite cachedRingSprite;
+
     private Vector2 angularVelocity;
     private float currentZoom;
+    private float idealZoomCache = 2.0f;
     private float accumulatedRotationAngle = 0f;
     private bool hasTriggeredRotationMonologue = false;
     private bool hasDiscoveredHotspotThisInspection = false;
@@ -94,7 +110,7 @@ public class ClueInspector : MonoBehaviour
         {
             ApplyGyroscopicRotation();
             HandleZoom();
-            EvaluateHotspots();
+            UpdateHotspotMarkers();
         }
     }
 
@@ -204,7 +220,8 @@ public class ClueInspector : MonoBehaviour
         float padding = 2.85f;
 
         float idealDist = (maxDim * 0.5f) / Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad) * padding;
-        minZoomDistance = Mathf.Max(0.4f, idealDist * minZoomRatio);
+        idealZoomCache = idealDist;
+        minZoomDistance = Mathf.Max(0.18f, idealDist * minZoomRatio);
         maxZoomDistance = idealDist * maxZoomRatio;
         return idealDist;
     }
@@ -238,7 +255,7 @@ public class ClueInspector : MonoBehaviour
             inspectionCamera.clearFlags = CameraClearFlags.SolidColor;
             inspectionCamera.backgroundColor = new Color(0.08f, 0.09f, 0.12f, 1f);
             inspectionCamera.depth = 20f;
-            inspectionCamera.nearClipPlane = 0.05f;
+            inspectionCamera.nearClipPlane = 0.02f;
             inspectionCamera.farClipPlane = 100f;
         }
 
@@ -530,6 +547,8 @@ public class ClueInspector : MonoBehaviour
             hs.OnDwellProgressChanged += OnHotspotDwellProgress;
             currentHotspots.Add(hs);
         }
+
+        BuildHotspotMarkers();
     }
 
     private void HandleInput()
@@ -550,10 +569,29 @@ public class ClueInspector : MonoBehaviour
 
         if (Input.GetMouseButtonDown(0))
         {
-            isDragging = true;
+            HotspotMarkerEntry hitEntry = TryFindHotspotAtCursor(Input.mousePosition);
+            if (hitEntry != null)
+            {
+                pressedHotspotEntry = hitEntry;
+                isDragging = false;
+            }
+            else
+            {
+                pressedHotspotEntry = null;
+                isDragging = true;
+            }
         }
         else if (Input.GetMouseButtonUp(0))
         {
+            if (pressedHotspotEntry != null)
+            {
+                HotspotMarkerEntry releaseEntry = TryFindHotspotAtCursor(Input.mousePosition);
+                if (releaseEntry == pressedHotspotEntry && !pressedHotspotEntry.hotspot.isDiscovered)
+                {
+                    pressedHotspotEntry.hotspot.DiscoverImmediate();
+                }
+                pressedHotspotEntry = null;
+            }
             isDragging = false;
         }
 
@@ -605,7 +643,8 @@ public class ClueInspector : MonoBehaviour
         float scroll = Input.mouseScrollDelta.y;
         if (Mathf.Abs(scroll) > 0.01f)
         {
-            currentZoom -= scroll * zoomSensitivity;
+            float scaledStep = zoomSensitivity * Mathf.Clamp(idealZoomCache * 0.5f, 0.25f, 1.5f);
+            currentZoom -= scroll * scaledStep;
             currentZoom = Mathf.Clamp(currentZoom, minZoomDistance, maxZoomDistance);
             UpdateCameraPosition();
         }
@@ -618,26 +657,169 @@ public class ClueInspector : MonoBehaviour
         inspectionCamera.transform.position = centerPos - (inspectionCamera.transform.forward * currentZoom);
     }
 
-    private void EvaluateHotspots()
+    private void BuildHotspotMarkers()
     {
-        if (inspectionCamera == null || currentHotspots.Count == 0) return;
+        ClearHotspotMarkers();
+        if (inspectionUI == null || inspectionUI.inspectionPanel == null) return;
 
-        Vector2 screenCenter = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
-        bool anyFocused = false;
+        Sprite ringSprite = GetRingSprite();
+        Transform uiParent = inspectionUI.inspectionPanel.transform;
 
-        foreach (var hs in currentHotspots)
+        foreach (AnomalyHotspot hs in currentHotspots)
         {
-            if (hs.EvaluateObservation(inspectionCamera, screenCenter))
+            if (hs == null) continue;
+
+            GameObject root = new GameObject($"HotspotMarker_{hs.name}");
+            root.transform.SetParent(uiParent, false);
+            RectTransform rect = root.AddComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(36f, 36f);
+
+            UnityEngine.UI.Image ringImg = root.AddComponent<UnityEngine.UI.Image>();
+            ringImg.sprite = ringSprite;
+            ringImg.raycastTarget = false;
+            ringImg.color = new Color(0.75f, 0.95f, 1f, 0.92f);
+
+            GameObject labelObj = new GameObject("Label");
+            labelObj.transform.SetParent(root.transform, false);
+            RectTransform labelRect = labelObj.AddComponent<RectTransform>();
+            labelRect.anchorMin = new Vector2(0.5f, 0f);
+            labelRect.anchorMax = new Vector2(0.5f, 0f);
+            labelRect.anchoredPosition = new Vector2(0f, -18f);
+            labelRect.sizeDelta = new Vector2(180f, 24f);
+
+            TMPro.TextMeshProUGUI labelTmp = labelObj.AddComponent<TMPro.TextMeshProUGUI>();
+            labelTmp.text = "Klik untuk periksa";
+            labelTmp.fontSize = 13f;
+            labelTmp.alignment = TMPro.TextAlignmentOptions.Center;
+            labelTmp.color = new Color(1f, 0.95f, 0.7f, 0.95f);
+            labelTmp.raycastTarget = false;
+
+            root.SetActive(false);
+
+            hotspotMarkers.Add(new HotspotMarkerEntry
             {
-                anyFocused = true;
-                break;
+                hotspot = hs,
+                root = root,
+                rect = rect,
+                ringImage = ringImg,
+                labelText = labelTmp
+            });
+        }
+    }
+
+    private void ClearHotspotMarkers()
+    {
+        for (int i = 0; i < hotspotMarkers.Count; i++)
+        {
+            if (hotspotMarkers[i] != null && hotspotMarkers[i].root != null)
+            {
+                Destroy(hotspotMarkers[i].root);
+            }
+        }
+        hotspotMarkers.Clear();
+        pressedHotspotEntry = null;
+    }
+
+    private void UpdateHotspotMarkers()
+    {
+        if (inspectionCamera == null || hotspotMarkers.Count == 0) return;
+
+        Vector2 mousePos = Input.mousePosition;
+
+        for (int i = 0; i < hotspotMarkers.Count; i++)
+        {
+            HotspotMarkerEntry entry = hotspotMarkers[i];
+            if (entry == null || entry.hotspot == null || entry.root == null) continue;
+
+            if (!entry.hotspot.TryGetScreenPosition(inspectionCamera, out Vector3 screenPos))
+            {
+                entry.isVisible = false;
+                if (entry.root.activeSelf) entry.root.SetActive(false);
+                continue;
+            }
+
+            entry.isVisible = true;
+            entry.lastScreenPos = screenPos;
+            if (!entry.root.activeSelf) entry.root.SetActive(true);
+            entry.rect.position = screenPos;
+
+            if (entry.hotspot.isDiscovered)
+            {
+                entry.ringImage.color = new Color(0.35f, 0.95f, 0.55f, 0.75f);
+                entry.rect.localScale = Vector3.one * 0.85f;
+                entry.labelText.text = "Terperiksa";
+                entry.labelText.color = new Color(0.45f, 1f, 0.65f, 0.85f);
+            }
+            else
+            {
+                float hitRadius = Mathf.Max(entry.hotspot.screenRadius * 0.65f, 34f);
+                bool isHovered = Vector2.Distance(mousePos, new Vector2(screenPos.x, screenPos.y)) <= hitRadius;
+
+                if (isHovered)
+                {
+                    entry.ringImage.color = new Color(1f, 0.85f, 0.15f, 1f);
+                    entry.rect.localScale = Vector3.one * 1.25f;
+                    entry.labelText.text = "Klik untuk periksa";
+                    entry.labelText.color = new Color(1f, 0.92f, 0.35f, 1f);
+                }
+                else
+                {
+                    float pulse = 1f + 0.12f * Mathf.Sin(Time.unscaledTime * 4f);
+                    entry.ringImage.color = new Color(0.65f, 0.92f, 1f, 0.9f);
+                    entry.rect.localScale = Vector3.one * pulse;
+                    entry.labelText.text = "Periksa";
+                    entry.labelText.color = new Color(0.85f, 0.95f, 1f, 0.8f);
+                }
+            }
+        }
+    }
+
+    private HotspotMarkerEntry TryFindHotspotAtCursor(Vector2 cursorPos)
+    {
+        HotspotMarkerEntry closest = null;
+        float closestDist = float.MaxValue;
+
+        for (int i = 0; i < hotspotMarkers.Count; i++)
+        {
+            HotspotMarkerEntry entry = hotspotMarkers[i];
+            if (entry == null || !entry.isVisible || entry.hotspot == null || entry.hotspot.isDiscovered) continue;
+
+            float hitRadius = Mathf.Max(entry.hotspot.screenRadius * 0.65f, 36f);
+            float dist = Vector2.Distance(cursorPos, new Vector2(entry.lastScreenPos.x, entry.lastScreenPos.y));
+            if (dist <= hitRadius && dist < closestDist)
+            {
+                closest = entry;
+                closestDist = dist;
             }
         }
 
-        if (!anyFocused && inspectionUI != null)
+        return closest;
+    }
+
+    private static Sprite GetRingSprite()
+    {
+        if (cachedRingSprite != null) return cachedRingSprite;
+
+        const int size = 64;
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+
+        float center = (size - 1) * 0.5f;
+        for (int y = 0; y < size; y++)
         {
-            inspectionUI.UpdateDwellProgress(0f);
+            for (int x = 0; x < size; x++)
+            {
+                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(center, center)) / center;
+                float ringAlpha = Mathf.SmoothStep(0f, 1f, 1f - Mathf.Abs(dist - 0.72f) / 0.14f);
+                float dotAlpha = Mathf.SmoothStep(0f, 1f, 1f - dist / 0.24f);
+                float alpha = Mathf.Clamp01(Mathf.Max(ringAlpha, dotAlpha * 0.95f));
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+            }
         }
+
+        tex.Apply();
+        cachedRingSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        return cachedRingSprite;
     }
 
     private void OnHotspotDwellProgress(float progress)
@@ -873,6 +1055,7 @@ public class ClueInspector : MonoBehaviour
     private void FinalizeCloseInspection()
     {
         isInspecting = false;
+        ClearHotspotMarkers();
 
         if (spawnedInspectionModel != null)
         {

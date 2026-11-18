@@ -96,11 +96,11 @@ public class InspectionUI : MonoBehaviour
         {
             if (clue.isCollectable)
             {
-                statusLogText.text = "Periksa detail objek. Tekan [F] Ambil untuk mengamankan bukti, atau arahkan pandangan ke anomali fisik...";
+                statusLogText.text = "Putar & periksa titik tanda anomali (klik), atau tekan [F] Ambil untuk mengamankan bukti...";
             }
             else
             {
-                statusLogText.text = "Periksa detail objek. Arahkan pandangan ke titik anomali fisik...";
+                statusLogText.text = "Putar & zoom objek, lalu klik titik tanda anomali untuk memeriksa detail...";
             }
             statusLogText.color = Color.white;
         }
